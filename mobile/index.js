@@ -114,7 +114,7 @@ var __pluginBundle = (() => {
     idle: "#f0b232",
     offline: "#80848e"
   };
-  function getStatusColor2(status, useFallback = false) {
+  function getStatusColor(status, useFallback = false) {
     if (useFallback) {
       return FallbackColors[status];
     }
@@ -183,7 +183,7 @@ var __pluginBundle = (() => {
           key: platform,
           style: { width: platformIconSize, height: platformIconSize, marginRight: index < platformStatuses.length - 1 ? 2 : 0 }
         },
-        /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color: getStatusColor2(status, storage.fallbackColors), iconSize: platformIconSize })
+        /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color: getStatusColor(status, storage.fallbackColors), iconSize: platformIconSize })
       );
     }));
   }

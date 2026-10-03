@@ -3,6 +3,7 @@ import { findByDisplayName, findByName, findByProps, findByPropsAll, findByStore
 import {General} from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils";
 import StatusIcons, { getUserStatuses, platformOrder } from "./StatusIcons";
+import { getStatusColor } from "./colors";
 import platformBadgeSources from "./platformBadgeSources.json";
 import { getAssetByName, getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
