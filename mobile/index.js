@@ -301,12 +301,21 @@ var __pluginBundle = (() => {
           (item) => typeof item === "string" || typeof item?.props?.children === "string"
         );
         if (nameIndex === -1) return false;
-        let serverTagIndex = -1;
-        nameChildren.forEach((item, index) => {
-          if (item?.type?.Types && item.props?.type === 0) serverTagIndex = index;
-        });
-        nameChildren.splice(
-          (serverTagIndex >= 0 ? serverTagIndex : nameIndex) + 1,
+        const findChildPosition = (element) => {
+          const children = element?.props?.children;
+          if (!Array.isArray(children)) return null;
+          const index = children.findIndex((item) => item?.type?.Types && item.props?.type === 0);
+          if (index !== -1) return { children, index };
+          for (const child of children) {
+            const position = findChildPosition(child);
+            if (position) return position;
+          }
+          return null;
+        };
+        const serverTagPosition = findChildPosition(nameContainer);
+        const insertionPosition = serverTagPosition ?? { children: nameChildren, index: nameIndex };
+        insertionPosition.children.splice(
+          insertionPosition.index + 1,
           0,
           /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key, style: { flexDirection: "row", alignItems: "center", marginLeft: 2 } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, key) : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId, small: true }))
         );
@@ -427,6 +436,7 @@ var __pluginBundle = (() => {
       if (Rows?.GuildMemberRow) {
         unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
           if (!storage.userList) return;
+          if (!user || user.bot) return;
           if (storage.oldUserListIcons) return;
           insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
         }));
@@ -434,6 +444,7 @@ var __pluginBundle = (() => {
       let patchedAvatar = false;
       const rowPatch = ([{ user }], res) => {
         if (!storage.userList) return;
+        if (!user || user.bot) return;
         const label = res?.props?.label;
         const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
         if (!modifiedStatusIcons) {

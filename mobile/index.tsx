@@ -47,12 +47,24 @@ export default {
             );
             if (nameIndex === -1) return false;
 
-            let serverTagIndex = -1;
-            nameChildren.forEach((item, index) => {
-                if (item?.type?.Types && item.props?.type === 0) serverTagIndex = index;
-            });
+            const findChildPosition = (element) => {
+                const children = element?.props?.children;
+                if (!Array.isArray(children)) return null;
 
-            nameChildren.splice((serverTagIndex >= 0 ? serverTagIndex : nameIndex) + 1, 0,
+                const index = children.findIndex((item) => item?.type?.Types && item.props?.type === 0);
+                if (index !== -1) return { children, index };
+
+                for (const child of children) {
+                    const position = findChildPosition(child);
+                    if (position) return position;
+                }
+
+                return null;
+            };
+            const serverTagPosition = findChildPosition(nameContainer);
+            const insertionPosition = serverTagPosition ?? { children: nameChildren, index: nameIndex };
+
+            insertionPosition.children.splice(insertionPosition.index + 1, 0,
                 <View key={key} style={{ flexDirection: "row", alignItems: "center", marginLeft: 2 }}>
                     {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small />}
                 </View>
@@ -353,6 +365,7 @@ export default {
         if(Rows?.GuildMemberRow){
             unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
                 if(!storage.userList) return;
+                if(!user || user.bot) return;
                 if(storage.oldUserListIcons) return;
                 insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
             }))
@@ -364,6 +377,7 @@ export default {
         // user list on tabs v2
         const rowPatch = ([{ user }], res) => {
             if(!storage.userList) return;
+            if(!user || user.bot) return;
 
             const label = res?.props?.label;
             const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
