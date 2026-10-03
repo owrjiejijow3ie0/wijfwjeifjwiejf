@@ -3,8 +3,6 @@ import { findByDisplayName, findByName, findByProps, findByPropsAll, findByStore
 import {General} from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils";
 import StatusIcons, { getUserStatuses, platformOrder } from "./StatusIcons";
-import StatusIcon from "./StatusIcon";
-import { getStatusColor } from "./colors";
 import platformBadgeSources from "./platformBadgeSources.json";
 import { getAssetByName, getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
@@ -34,33 +32,16 @@ export default {
         const patchBeforeIfFound = (method, target, callback) => {
             if (target) unpatches.push(patcher.before(method, target, callback))
         }
-        const renderMobileStatusGlyph = (status, key) => (
-            <View key={key} style={{
-                width: 12,
-                height: 12,
-                borderRadius: 6,
-                backgroundColor: getStatusColor(status, storage.fallbackColors),
-                alignItems: "center",
-                justifyContent: "center"
-            }}>
-                <StatusIcon platform="mobile" color="#000" iconSize={8} />
-            </View>
-        );
-        const addAvatarMobileIndicator = (root, userId) => {
-
-            const nativeIndicator = findInReactTree(avatar, (child) =>
-                child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
+        const syncAvatarMobileStatus = (root, userId) => {
+            const isMobileOnline = Boolean(getUserStatuses(userId)?.mobile) && !storage.hideMobileStatus;
+            const statusElement = findInReactTree(root, (child) =>
+                child?.props && (
+                    Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline") ||
+                    child?.type?.name === "Status" ||
+                    child?.type?.type?.name === "Status"
+                )
             );
-            if (nativeIndicator) nativeIndicator.props.isMobileOnline = false;
-
-                    if (badge.props) Object.assign(element.props, badge.props);
-                <View key="MobilePlatformAvatarIndicator" style={{ position: "relative" }}>
-                    {avatar}
-                    <View pointerEvents="none" style={{ position: "absolute", right: -2, bottom: -2 }}>
-                        {renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")}
-                    </View>
-                </View>
-                    if (badge.props) Object.assign(element.props, badge.props);
+            if (statusElement?.props) statusElement.props.isMobileOnline = isMobileOnline;
         };
         const insertStatusIconsAfterName = (root, userId, key) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
@@ -236,6 +217,12 @@ export default {
         
 
         const PresenceStore = findByStoreName("PresenceStore");
+        if (typeof PresenceStore?.isMobileOnline === "function") {
+            patchAfterIfFound("isMobileOnline", PresenceStore, (args, result) => {
+                if (storage.hideMobileStatus) return false;
+                return result || Boolean(getUserStatuses(args?.[0])?.mobile);
+            });
+        }
 
         //tabs v2 dm header
         patchAfterIfFound("default", findByName("ChannelHeader", false), (args, res) => {
@@ -322,24 +309,20 @@ export default {
 
 
         const profileBadgeProps = {};
-        const tightenMobileBadgeSpacing = (badge, element) => {
-            if (badge?.platform !== "mobile" || !element?.props) return;
-            element.props.style = [element.props.style, { marginRight: -3 }];
-        };
         const applyProfileBadgeProps = (_, element) => {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) {
                 element.props.source = badge.source;
                 element.props.label = badge.label;
                 element.props.id = badge.id;
-                tightenMobileBadgeSpacing(badge, element);
+                if (badge.props) Object.assign(element.props, badge.props);
             }
         };
         const applyRenderBadgeProps = (_, element) => {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) {
                 Object.assign(element.props, badge);
-                tightenMobileBadgeSpacing(badge, element);
+                if (badge.props) Object.assign(element.props, badge.props);
             }
         };
         const jsxApi = (globalThis as any).bunny?.api?.react?.jsx;
@@ -394,12 +377,10 @@ export default {
 
         const Status = findByName("Status", false);
         patchBeforeIfFound("default", Status, (args) => {
-            if (storage.hideMobileStatus && args?.[0]) args[0].isMobileOnline = false;
-        });
-        patchAfterIfFound("default", Status, (args) => {
             const statusProps = args?.[0];
-            if (!statusProps?.isMobileOnline || storage.hideMobileStatus) return;
-            return renderMobileStatusGlyph(statusProps.status || "online", "MobilePlatformStatusGlyph");
+            if (!statusProps) return;
+            if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
+            else if (statusProps.userId && getUserStatuses(statusProps.userId)?.mobile) statusProps.isMobileOnline = true;
         })
 
         //might remove in the future, seems outdated
@@ -409,7 +390,7 @@ export default {
             unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
                 if(!storage.userList) return;
                 if(!user || user.bot) return;
-                addAvatarMobileIndicator(res, user.id);
+                syncAvatarMobileStatus(res, user.id);
                 if(storage.oldUserListIcons) return;
                 insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
             }))
@@ -422,7 +403,7 @@ export default {
         const rowPatch = ([{ user }], res) => {
             if(!storage.userList) return;
             if(!user || user.bot) return;
-            addAvatarMobileIndicator(res, user.id);
+            syncAvatarMobileStatus(res, user.id);
             const label = res?.props?.label;
             const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
 

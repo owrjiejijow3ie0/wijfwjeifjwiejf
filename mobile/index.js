@@ -289,23 +289,13 @@ var __pluginBundle = (() => {
       const patchBeforeIfFound = (method, target, callback) => {
         if (target) unpatches.push(patcher.before(method, target, callback));
       };
-      const renderMobileStatusGlyph = (status, key) => /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key, style: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: getStatusColor(status, storage.fallbackColors),
-        alignItems: "center",
-        justifyContent: "center"
-      } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform: "mobile", color: "#000", iconSize: 8 }));
-      const addAvatarMobileIndicator = (root, userId) => {
-        const nativeIndicator = findInReactTree(
-          avatar,
-          (child) => child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
+      const syncAvatarMobileStatus = (root, userId) => {
+        const isMobileOnline = Boolean(getUserStatuses(userId)?.mobile) && !storage.hideMobileStatus;
+        const statusElement = findInReactTree(
+          root,
+          (child) => child?.props && (Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline") || child?.type?.name === "Status" || child?.type?.type?.name === "Status")
         );
-        if (nativeIndicator) nativeIndicator.props.isMobileOnline = false;
-        if (badge.props) Object.assign(element.props, badge.props);
-        /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "MobilePlatformAvatarIndicator", style: { position: "relative" } }, avatar, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { pointerEvents: "none", style: { position: "absolute", right: -2, bottom: -2 } }, renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")));
-        if (badge.props) Object.assign(element.props, badge.props);
+        if (statusElement?.props) statusElement.props.isMobileOnline = isMobileOnline;
       };
       const insertStatusIconsAfterName = (root, userId, key) => {
         if (findInReactTree(root, (child) => child?.key === key)) return true;
@@ -341,6 +331,12 @@ var __pluginBundle = (() => {
         return true;
       };
       const PresenceStore2 = findByStoreName("PresenceStore");
+      if (typeof PresenceStore2?.isMobileOnline === "function") {
+        patchAfterIfFound("isMobileOnline", PresenceStore2, (args, result) => {
+          if (storage.hideMobileStatus) return false;
+          return result || Boolean(getUserStatuses(args?.[0])?.mobile);
+        });
+      }
       patchAfterIfFound("default", findByName("ChannelHeader", false), (args, res) => {
         if (!storage.dmTopBar) return;
         if (!(res.type?.type?.name == "PrivateChannelHeader")) return;
@@ -394,24 +390,20 @@ var __pluginBundle = (() => {
         });
       });
       const profileBadgeProps = {};
-      const tightenMobileBadgeSpacing = (badge2, element2) => {
-        if (badge2?.platform !== "mobile" || !element2?.props) return;
-        element2.props.style = [element2.props.style, { marginRight: -3 }];
-      };
-      const applyProfileBadgeProps = (_, element2) => {
-        const badge2 = profileBadgeProps[element2?.props?.id];
-        if (badge2 && element2?.props) {
-          element2.props.source = badge2.source;
-          element2.props.label = badge2.label;
-          element2.props.id = badge2.id;
-          tightenMobileBadgeSpacing(badge2, element2);
+      const applyProfileBadgeProps = (_, element) => {
+        const badge = profileBadgeProps[element?.props?.id];
+        if (badge && element?.props) {
+          element.props.source = badge.source;
+          element.props.label = badge.label;
+          element.props.id = badge.id;
+          if (badge.props) Object.assign(element.props, badge.props);
         }
       };
-      const applyRenderBadgeProps = (_, element2) => {
-        const badge2 = profileBadgeProps[element2?.props?.id];
-        if (badge2 && element2?.props) {
-          Object.assign(element2.props, badge2);
-          tightenMobileBadgeSpacing(badge2, element2);
+      const applyRenderBadgeProps = (_, element) => {
+        const badge = profileBadgeProps[element?.props?.id];
+        if (badge && element?.props) {
+          Object.assign(element.props, badge);
+          if (badge.props) Object.assign(element.props, badge.props);
         }
       };
       const jsxApi = globalThis.bunny?.api?.react?.jsx;
@@ -424,9 +416,9 @@ var __pluginBundle = (() => {
         });
       } else {
         const jsxRuntime = findByProps("jsx", "jsxs");
-        const applyBadgeJsx = ([component], element2) => {
-          if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element2);
-          if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element2);
+        const applyBadgeJsx = ([component], element) => {
+          if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element);
+          if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element);
         };
         patchAfterIfFound("jsx", jsxRuntime, applyBadgeJsx);
         patchAfterIfFound("jsxs", jsxRuntime, applyBadgeJsx);
@@ -456,19 +448,17 @@ var __pluginBundle = (() => {
       });
       const Status = findByName("Status", false);
       patchBeforeIfFound("default", Status, (args) => {
-        if (storage.hideMobileStatus && args?.[0]) args[0].isMobileOnline = false;
-      });
-      patchAfterIfFound("default", Status, (args) => {
         const statusProps = args?.[0];
-        if (!statusProps?.isMobileOnline || storage.hideMobileStatus) return;
-        return renderMobileStatusGlyph(statusProps.status || "online", "MobilePlatformStatusGlyph");
+        if (!statusProps) return;
+        if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
+        else if (statusProps.userId && getUserStatuses(statusProps.userId)?.mobile) statusProps.isMobileOnline = true;
       });
       const Rows = findByProps("GuildMemberRow");
       if (Rows?.GuildMemberRow) {
         unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
           if (!storage.userList) return;
           if (!user || user.bot) return;
-          addAvatarMobileIndicator(res, user.id);
+          syncAvatarMobileStatus(res, user.id);
           if (storage.oldUserListIcons) return;
           insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
         }));
@@ -477,7 +467,7 @@ var __pluginBundle = (() => {
       const rowPatch = ([{ user }], res) => {
         if (!storage.userList) return;
         if (!user || user.bot) return;
-        addAvatarMobileIndicator(res, user.id);
+        syncAvatarMobileStatus(res, user.id);
         const label = res?.props?.label;
         const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
         if (!modifiedStatusIcons) {
