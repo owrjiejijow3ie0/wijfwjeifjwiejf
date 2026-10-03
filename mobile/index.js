@@ -170,10 +170,11 @@ var __pluginBundle = (() => {
     const userId = props.userId;
     const iconSize = props.size ?? (props.small ? 17 : 16);
     const statuses = getUserStatuses(userId);
+    const orderedPlatforms = props.mobileFirst && statuses?.mobile ? ["mobile", ...platformOrder.filter((platform) => platform !== "mobile")] : platformOrder;
     const platformStatuses = Object.entries(statuses ?? {}).sort(([left], [right]) => {
-      const leftOrder = platformOrder.indexOf(left);
-      const rightOrder = platformOrder.indexOf(right);
-      return (leftOrder < 0 ? platformOrder.length : leftOrder) - (rightOrder < 0 ? platformOrder.length : rightOrder);
+      const leftOrder = orderedPlatforms.indexOf(left);
+      const rightOrder = orderedPlatforms.indexOf(right);
+      return (leftOrder < 0 ? orderedPlatforms.length : leftOrder) - (rightOrder < 0 ? orderedPlatforms.length : rightOrder);
     });
     return /* @__PURE__ */ vendetta.metro.common.React.createElement(ReactNative.View, { style: [{ flexDirection: "row", alignItems: "center" }, props.containerStyle] }, platformStatuses.map(([platform, status], index) => {
       const platformIconSize = props.small && platform === "mobile" ? 14 : iconSize;
@@ -304,7 +305,7 @@ var __pluginBundle = (() => {
         nameChildren.splice(
           nameIndex + 1,
           0,
-          /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key, style: { flexDirection: "row", alignItems: "center", alignSelf: "center", marginLeft: 2 } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, key) : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId, small: true }))
+          /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key, style: { flexDirection: "row", alignItems: "center", alignSelf: "center" } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, key) : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId, small: true, mobileFirst: true }))
         );
         return true;
       };
@@ -440,7 +441,7 @@ var __pluginBundle = (() => {
               justifyContent: "space-between",
               flexDirection: "row",
               alignItems: "center"
-            }, key: "TabsV2MemberListStatusIconsView" }, label, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: { flexDirection: "row", alignItems: "center", marginLeft: 2 } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, "TV2MLSIV") : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId: user.id, small: true })));
+            }, key: "TabsV2MemberListStatusIconsView" }, label, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: { flexDirection: "row", alignItems: "center", marginLeft: 2 } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, "TV2MLSIV") : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId: user.id, small: true, mobileFirst: true })));
           } else insertStatusIconsAfterName(label, user.id, "TabsV2MemberListStatusIconsView");
           if (!patchedAvatar && res?.props?.icon?.type) {
             unpatches.push(patcher.before("type", res.props.icon.type, (args) => {

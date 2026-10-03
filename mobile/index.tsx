@@ -48,8 +48,8 @@ export default {
             if (nameIndex === -1) return false;
 
             nameChildren.splice(nameIndex + 1, 0,
-                <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center", marginLeft: 2 }}>
-                    {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small />}
+                <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center" }}>
+                    {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small mobileFirst />}
                 </View>
             );
             return true;
@@ -375,7 +375,7 @@ export default {
                         }} key="TabsV2MemberListStatusIconsView">
                             {label}
                             <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 2 }}>
-                                {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small />}
+                                {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small mobileFirst />}
                             </View>
                         </View>
                     );
