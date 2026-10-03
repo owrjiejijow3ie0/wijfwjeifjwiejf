@@ -30,9 +30,9 @@ export default function Settings() {
                     note=""
                 />
                 <Forms.FormSwitchRow
-                    label="Hide mobile status from the normal indicator"
-                    value={storage.removeDefaultMobile ?? true}
-                    onValueChange={v => storage.removeDefaultMobile = v}
+                    label="Hide mobile icon next to avatar"
+                    value={storage.hideMobileStatus ?? false}
+                    onValueChange={v => storage.hideMobileStatus = v}
                     note=""
                 />
                 <Forms.FormSwitchRow

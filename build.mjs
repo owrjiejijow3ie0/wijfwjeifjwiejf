@@ -21,8 +21,8 @@ for (const [platform, { path, viewBox }] of Object.entries(platformIcons)) {
     platformBadgeSources[platform] = {};
 
     for (const [status, color] of Object.entries(statusColors)) {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="${viewBox}"><path fill="${color}" d="${path}"/></svg>`;
-        const png = new Resvg(svg, { fitTo: { mode: "width", value: 24 } }).render().asPng();
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="${viewBox}"><path fill="${color}" d="${path}"/></svg>`;
+        const png = new Resvg(svg, { fitTo: { mode: "width", value: 96 } }).render().asPng();
         platformBadgeSources[platform][status] = `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
     }
 }

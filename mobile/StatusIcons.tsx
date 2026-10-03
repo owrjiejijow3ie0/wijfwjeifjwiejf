@@ -3,10 +3,12 @@ import { findInReactTree } from '@vendetta/utils';
 import React from 'react'
 import StatusIcon from './StatusIcon';
 import { getStatusColor } from './colors';
-import { FluxDispatcher } from '@vendetta/metro/common';
+import { ReactNative } from '@vendetta/metro/common';
 
 import { storage } from "@vendetta/plugin";
 import { useProxy } from "@vendetta/storage";
+
+export const platformOrder = ["desktop", "embedded", "mobile", "web", "vr"];
 
 const PresenceStore = findByStoreName("PresenceStore");
 const SessionsStore = findByStoreName("SessionsStore");
@@ -62,19 +64,28 @@ export default function StatusIcons(props) {
     //const [, forceRender] = React.useReducer(x => ~x, 0)
     const userId = props.userId;
 
-    const iconSize = props.size ?? 16;
+    const iconSize = props.size ?? (props.small ? 17 : 16);
 
     const statuses = getUserStatuses(userId)
-    
-    /*FluxDispatcher.subscribe('PRESENCE_UPDATES', u => {
-        //if(u.updates.find(m => m.user?.id == userId)){
-            forceRender()
-        //}
-    })*/
+    const platformStatuses = Object.entries(statuses ?? {})
+        .sort(([left], [right]) => {
+            const leftOrder = platformOrder.indexOf(left);
+            const rightOrder = platformOrder.indexOf(right);
+            return (leftOrder < 0 ? platformOrder.length : leftOrder) - (rightOrder < 0 ? platformOrder.length : rightOrder);
+        });
     return (
-        <>
-            {Object.keys(statuses ?? {}).map((s) => 
-            <StatusIcon platform={s} color={getStatusColor(statuses[s],storage.fallbackColors)} iconSize={iconSize}/>)}
-        </>
+        <ReactNative.View style={[{ flexDirection: "row", alignItems: "center" }, props.containerStyle]}>
+            {platformStatuses.map(([platform, status], index) => {
+                const platformIconSize = props.small && platform === "mobile" ? 14 : iconSize;
+                return (
+                    <ReactNative.View
+                        key={platform}
+                        style={{ width: platformIconSize, height: platformIconSize, marginRight: index < platformStatuses.length - 1 ? 2 : 0 }}
+                    >
+                        <StatusIcon platform={platform} color={getStatusColor(status, storage.fallbackColors)} iconSize={platformIconSize} />
+                    </ReactNative.View>
+                );
+            })}
+        </ReactNative.View>
     )
 }

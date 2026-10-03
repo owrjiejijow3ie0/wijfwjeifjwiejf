@@ -2,7 +2,7 @@ import { patcher } from "@vendetta";
 import { findByDisplayName, findByName, findByProps, findByPropsAll, findByStoreName, findByTypeNameAll, findByTypeName } from "@vendetta/metro";
 import {General} from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils";
-import StatusIcons, { getUserStatuses } from "./StatusIcons";
+import StatusIcons, { getUserStatuses, platformOrder } from "./StatusIcons";
 import platformBadgeSources from "./platformBadgeSources.json";
 import { getAssetByName, getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
@@ -22,7 +22,7 @@ export default {
         storage.dmTopBar ??= true
         storage.userList ??= true
         storage.profileUsername ??= true
-        storage.removeDefaultMobile ??= true
+        storage.hideMobileStatus ??= false
         storage.fallbackColors ??= false
         storage.oldUserListIcons ??= false
         const debugLabels = false
@@ -293,7 +293,8 @@ export default {
                 ? cachedStatuses
                 : PresenceStore.getClientStatus?.(userId) ?? cachedStatuses;
             const platformStatuses = Object.entries(statuses ?? {})
-                .filter(([platform]) => ["desktop", "web", "mobile", "embedded", "vr"].includes(platform));
+                .filter(([platform]) => platformOrder.includes(platform))
+                .sort(([left], [right]) => platformOrder.indexOf(left) - platformOrder.indexOf(right));
 
             for (const [platform, status] of platformStatuses.reverse()) {
                 const iconUri = platformBadgeSources[platform]?.[status];
@@ -315,7 +316,7 @@ export default {
         patchBeforeIfFound("default", Status, (args) => {
             if(!args) return;
             if(!args[0]) return;
-            if(!storage.removeDefaultMobile)return;
+            if(!storage.hideMobileStatus)return;
             args[0].isMobileOnline = false
         })
 
@@ -333,9 +334,10 @@ export default {
                         <View 
                             key="GuildMemberRowStatusIconsView"
                             style={{
-                                flexDirection: 'row'
+                                flexDirection: 'row',
+                                marginLeft: 2
                         }}>
-                            {debugLabels ? <Text>GMRSIV</Text> : <StatusIcons userId={user.id}/>}
+                                {debugLabels ? <Text>GMRSIV</Text> : <StatusIcons userId={user.id} small />}
                         </View>
                     )
                 }
@@ -362,9 +364,11 @@ export default {
                     key="TabsV2MemberListStatusIconsView">
                         {res.props.label}
                         <View key="TabsV2MemberListStatusIconsView" style={{
-                            flexDirection: 'row'
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginLeft: 2
                         }}>
-                            {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id}/>}
+                            {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small />}
                         </View>
                     </View>
                 )
@@ -374,7 +378,7 @@ export default {
                         unpatches.push(patcher.before("type", res.props.icon.type, (args)=>{
                             //console.log("AVATAR", args,res)
                             //window.av = args
-                            if(storage.removeDefaultMobile){
+                            if(storage.hideMobileStatus){
                                 args[0].isMobileOnline = false
                             }
                         }))
