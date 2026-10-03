@@ -48,10 +48,10 @@ export default {
             statusProps.isMobileOnline = isMobileOnline;
             if (mobileStatus) statusProps.status = mobileStatus;
         };
-        const insertStatusIconsAfterName = (root, userId, key) => {
+        const insertStatusIconsAfterName = (root, userId, key, nameRoot = root) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
 
-            const nameContainer = findInReactTree(root, (child) =>
+            const nameContainer = findInReactTree(nameRoot, (child) =>
                 Array.isArray(child?.props?.children) &&
                 child.props.children.some((item) => typeof item === "string" || typeof item?.props?.children === "string")
             );
@@ -63,13 +63,13 @@ export default {
             );
             if (nameIndex === -1) return false;
 
-            const findGuildTagPosition = (node) => {
+            const findGuildTagPosition = (node, preferGuildTag = true) => {
                 if (Array.isArray(node)) {
                     for (let index = 0; index < node.length; index++) {
                         const child = node[index];
-                        if (child?.type?.Types && child.props?.type === 0) return { children: node, index };
+                        if (child?.type?.Types && (!preferGuildTag || child.props?.type === 0)) return { children: node, index };
 
-                        const nestedPosition = findGuildTagPosition(child);
+                        const nestedPosition = findGuildTagPosition(child, preferGuildTag);
                         if (nestedPosition) return nestedPosition;
                     }
                     return null;
@@ -77,10 +77,10 @@ export default {
 
                 const children = node?.props?.children;
                 if (!children) return null;
-                if (children?.type?.Types && children.props?.type === 0) return { parent: node, child: children };
-                return findGuildTagPosition(children);
+                if (children?.type?.Types && (!preferGuildTag || children.props?.type === 0)) return { parent: node, child: children };
+                return findGuildTagPosition(children, preferGuildTag);
             };
-            const guildTagPosition = findGuildTagPosition(root);
+            const guildTagPosition = findGuildTagPosition(root) ?? findGuildTagPosition(root, false);
             const statusIcons = (
                 <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center" }}>
                     {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small />}
@@ -381,7 +381,6 @@ export default {
                     source: { uri: iconUri },
                     label,
                     platform,
-                    props: platform === "mobile" ? { style: { marginRight: -3 } } : undefined,
                     userId
                 };
                 badges.unshift({ id, description: label, icon: "platform-indicator" });
@@ -479,7 +478,7 @@ export default {
                     Array.isArray(node?.props?.children) &&
                     node.props.children.some((child) => child?.props?.ellipsizeMode)
                 );
-                if (nameContainer) insertStatusIconsAfterName(nameContainer, userId, "TabsV2RedesignDMListIcons2");
+                if (nameContainer) insertStatusIconsAfterName(res, userId, "TabsV2RedesignDMListIcons2", nameContainer);
             }
             //nameContainer.props.children = <Text>hhh</Text>
             //const userId = messageContainer?.props?.message?.author?.id

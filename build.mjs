@@ -3,6 +3,38 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { Resvg } from "@resvg/resvg-js";
+import pngjs from "pngjs";
+
+const { PNG } = pngjs;
+
+function trimTransparentPng(buffer) {
+    const source = PNG.sync.read(buffer);
+    let left = source.width;
+    let top = source.height;
+    let right = -1;
+    let bottom = -1;
+
+    for (let y = 0; y < source.height; y++) {
+        for (let x = 0; x < source.width; x++) {
+            if (source.data[(y * source.width + x) * 4 + 3] === 0) continue;
+            left = Math.min(left, x);
+            top = Math.min(top, y);
+            right = Math.max(right, x);
+            bottom = Math.max(bottom, y);
+        }
+    }
+
+    if (right < left || bottom < top) return buffer;
+
+    const width = right - left + 1;
+    const height = bottom - top + 1;
+    const trimmed = new PNG({ width, height });
+    for (let y = 0; y < height; y++) {
+        const sourceOffset = ((top + y) * source.width + left) * 4;
+        source.data.copy(trimmed.data, y * width * 4, sourceOffset, sourceOffset + width * 4);
+    }
+    return PNG.sync.write(trimmed);
+}
 
 const root = new URL(".", import.meta.url);
 const manifestPath = fileURLToPath(new URL("mobile/manifest.json", root));
@@ -25,7 +57,8 @@ for (const [platform, { path, viewBox }] of Object.entries(platformIcons)) {
             ? `<g transform="translate(100 150) scale(0.8)"><path fill="${color}" d="${path}"/></g>`
             : `<path fill="${color}" d="${path}"/>`;
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="${viewBox}">${badgePath}</svg>`;
-        const png = new Resvg(svg, { fitTo: { mode: "width", value: 96 } }).render().asPng();
+        const renderedPng = new Resvg(svg, { fitTo: { mode: "width", value: 96 } }).render().asPng();
+        const png = platform === "mobile" ? trimTransparentPng(renderedPng) : renderedPng;
         platformBadgeSources[platform][status] = `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
     }
 }
