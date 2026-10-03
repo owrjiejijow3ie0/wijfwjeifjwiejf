@@ -351,39 +351,53 @@ export default {
         const rowPatch = ([{ user }], res) => {
             if(!storage.userList) return;
 
-            const modifiedStatusIcons = findInReactTree(res?.props?.label, (c) => c.key == "TabsV2MemberListStatusIconsView");
+            const label = res?.props?.label;
+            const nameContainer = findInReactTree(label, (c) =>
+                Array.isArray(c?.props?.children) &&
+                c.props.children.some((child) => typeof child === "string" || typeof child?.props?.children === "string")
+            );
+            const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
+
             if(!modifiedStatusIcons){
-                window.mst = res
-                res.props.label = (
-                    <View style={{
-                        //flex:1,
-                        justifyContent: storage.oldUserListIcons ? "space-between": "flex-start",
-                        flexDirection: "row",
-                        alignItems: "center"
-                    }}
-                    key="TabsV2MemberListStatusIconsView">
-                        {res.props.label}
-                        <View key="TabsV2MemberListStatusIconsView" style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            marginLeft: 2
-                        }}>
-                            {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small />}
+                if (storage.oldUserListIcons) {
+                    res.props.label = (
+                        <View style={{
+                            justifyContent: "space-between",
+                            flexDirection: "row",
+                            alignItems: "center"
+                        }} key="TabsV2MemberListStatusIconsView">
+                            {label}
+                            <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 2 }}>
+                                {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small />}
+                            </View>
                         </View>
-                    </View>
-                )
-                //window.iv2 = res.props.label
-                if(!patchedAvatar){
-                    if(res?.props?.icon?.type){
-                        unpatches.push(patcher.before("type", res.props.icon.type, (args)=>{
-                            //console.log("AVATAR", args,res)
-                            //window.av = args
-                            if(storage.hideMobileStatus){
-                                args[0].isMobileOnline = false
-                            }
-                        }))
-                        patchedAvatar = true
+                    );
+                } else if (nameContainer) {
+                    const nameChildren = nameContainer.props.children;
+                    const nameIndex = nameChildren.findIndex((child) =>
+                        typeof child === "string" || typeof child?.props?.children === "string"
+                    );
+
+                    if (nameIndex !== -1) {
+                        nameChildren.splice(nameIndex + 1, 0,
+                            <View key="TabsV2MemberListStatusIconsView" style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginLeft: 2
+                            }}>
+                                {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small />}
+                            </View>
+                        );
                     }
+                }
+
+                if(!patchedAvatar && res?.props?.icon?.type){
+                    unpatches.push(patcher.before("type", res.props.icon.type, (args)=>{
+                        if(storage.hideMobileStatus){
+                            args[0].isMobileOnline = false
+                        }
+                    }))
+                    patchedAvatar = true
                 }
             }
 
