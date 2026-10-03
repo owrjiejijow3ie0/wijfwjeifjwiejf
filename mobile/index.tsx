@@ -34,36 +34,6 @@ export default {
         const patchBeforeIfFound = (method, target, callback) => {
             if (target) unpatches.push(patcher.before(method, target, callback))
         }
-        const addAvatarMobileIndicator = (root, userId) => {
-            const mobileStatus = getUserStatuses(userId)?.mobile;
-            const avatar = root?.props?.icon;
-            if (!mobileStatus || storage.hideMobileStatus || !avatar) return;
-            if (findInReactTree(avatar, (child) => child?.key === "MobilePlatformAvatarIndicator")) return;
-
-            const nativeMobileIndicator = findInReactTree(avatar, (child) =>
-                child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
-            );
-            if (nativeMobileIndicator) nativeMobileIndicator.props.isMobileOnline = false;
-
-            root.props.icon = (
-                <View key="MobilePlatformAvatarIndicator" style={{ position: "relative" }}>
-                    {avatar}
-                    <View pointerEvents="none" style={{
-                        position: "absolute",
-                        right: -2,
-                        bottom: -2,
-                        width: 12,
-                        height: 12,
-                        borderRadius: 6,
-                        backgroundColor: getStatusColor(mobileStatus, storage.fallbackColors),
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <StatusIcon platform="mobile" color="#fff" iconSize={8} />
-                    </View>
-                </View>
-            );
-        };
         const insertStatusIconsAfterName = (root, userId, key) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
 
@@ -84,7 +54,7 @@ export default {
 
                 for (let index = startIndex; index < children.length; index++) {
                     const child = children[index];
-                    if (child?.type?.Types && child.props?.type === 0) return { children, index };
+                    if (child?.type?.Types) return { children, index };
 
                     const nestedPosition = findGuildTagPosition(child?.props?.children);
                     if (nestedPosition) return nestedPosition;
@@ -385,10 +355,34 @@ export default {
 
         const Status = findByName("Status", false);
         patchBeforeIfFound("default", Status, (args) => {
-            if(!args) return;
-            if(!args[0]) return;
-            if(!storage.hideMobileStatus)return;
-            args[0].isMobileOnline = false
+            const statusProps = args?.[0];
+            if (!statusProps) return;
+
+            const userId = statusProps.userId ?? statusProps.user?.id;
+            const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
+            if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
+            else if (mobileStatus) statusProps.isMobileOnline = true;
+        });
+        patchAfterIfFound("default", Status, (args) => {
+            const statusProps = args?.[0];
+            if (!statusProps?.isMobileOnline || storage.hideMobileStatus) return;
+
+            const userId = statusProps.userId ?? statusProps.user?.id;
+            const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
+            const status = mobileStatus || statusProps.status || "online";
+
+            return (
+                <View style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 6,
+                    backgroundColor: getStatusColor(status, storage.fallbackColors),
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
+                    <StatusIcon platform="mobile" color="#000" iconSize={8} />
+                </View>
+            );
         })
 
         //might remove in the future, seems outdated
@@ -398,7 +392,6 @@ export default {
             unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
                 if(!storage.userList) return;
                 if(!user || user.bot) return;
-                addAvatarMobileIndicator(res, user.id);
                 if(storage.oldUserListIcons) return;
                 insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
             }))
@@ -411,8 +404,6 @@ export default {
         const rowPatch = ([{ user }], res) => {
             if(!storage.userList) return;
             if(!user || user.bot) return;
-            addAvatarMobileIndicator(res, user.id);
-
             const label = res?.props?.label;
             const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
 
