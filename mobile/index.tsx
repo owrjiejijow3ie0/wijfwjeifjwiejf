@@ -34,6 +34,38 @@ export default {
         const patchBeforeIfFound = (method, target, callback) => {
             if (target) unpatches.push(patcher.before(method, target, callback))
         }
+        const renderMobileStatusGlyph = (status, key) => (
+            <View key={key} style={{
+                width: 12,
+                height: 12,
+                borderRadius: 6,
+                backgroundColor: getStatusColor(status, storage.fallbackColors),
+                alignItems: "center",
+                justifyContent: "center"
+            }}>
+                <StatusIcon platform="mobile" color="#000" iconSize={8} />
+            </View>
+        );
+        const addAvatarMobileIndicator = (root, userId) => {
+            const mobileStatus = getUserStatuses(userId)?.mobile;
+            const avatar = root?.props?.icon;
+            if (!mobileStatus || storage.hideMobileStatus || !avatar) return;
+            if (findInReactTree(avatar, (child) => child?.key === "MobilePlatformAvatarIndicator")) return;
+
+            const nativeIndicator = findInReactTree(avatar, (child) =>
+                child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
+            );
+            if (nativeIndicator) nativeIndicator.props.isMobileOnline = false;
+
+            root.props.icon = (
+                <View key="MobilePlatformAvatarIndicator" style={{ position: "relative" }}>
+                    {avatar}
+                    <View pointerEvents="none" style={{ position: "absolute", right: -2, bottom: -2 }}>
+                        {renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")}
+                    </View>
+                </View>
+            );
+        };
         const insertStatusIconsAfterName = (root, userId, key) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
 
@@ -355,34 +387,12 @@ export default {
 
         const Status = findByName("Status", false);
         patchBeforeIfFound("default", Status, (args) => {
-            const statusProps = args?.[0];
-            if (!statusProps) return;
-
-            const userId = statusProps.userId ?? statusProps.user?.id;
-            const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
-            if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
-            else if (mobileStatus) statusProps.isMobileOnline = true;
+            if (storage.hideMobileStatus && args?.[0]) args[0].isMobileOnline = false;
         });
         patchAfterIfFound("default", Status, (args) => {
             const statusProps = args?.[0];
             if (!statusProps?.isMobileOnline || storage.hideMobileStatus) return;
-
-            const userId = statusProps.userId ?? statusProps.user?.id;
-            const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
-            const status = mobileStatus || statusProps.status || "online";
-
-            return (
-                <View style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: 6,
-                    backgroundColor: getStatusColor(status, storage.fallbackColors),
-                    alignItems: "center",
-                    justifyContent: "center"
-                }}>
-                    <StatusIcon platform="mobile" color="#000" iconSize={8} />
-                </View>
-            );
+            return renderMobileStatusGlyph(statusProps.status || "online", "MobilePlatformStatusGlyph");
         })
 
         //might remove in the future, seems outdated
@@ -392,6 +402,7 @@ export default {
             unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
                 if(!storage.userList) return;
                 if(!user || user.bot) return;
+                addAvatarMobileIndicator(res, user.id);
                 if(storage.oldUserListIcons) return;
                 insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
             }))
@@ -404,6 +415,7 @@ export default {
         const rowPatch = ([{ user }], res) => {
             if(!storage.userList) return;
             if(!user || user.bot) return;
+            addAvatarMobileIndicator(res, user.id);
             const label = res?.props?.label;
             const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
 

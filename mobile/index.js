@@ -289,6 +289,26 @@ var __pluginBundle = (() => {
       const patchBeforeIfFound = (method, target, callback) => {
         if (target) unpatches.push(patcher.before(method, target, callback));
       };
+      const renderMobileStatusGlyph = (status, key) => /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key, style: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: getStatusColor(status, storage.fallbackColors),
+        alignItems: "center",
+        justifyContent: "center"
+      } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform: "mobile", color: "#000", iconSize: 8 }));
+      const addAvatarMobileIndicator = (root, userId) => {
+        const mobileStatus = getUserStatuses(userId)?.mobile;
+        const avatar = root?.props?.icon;
+        if (!mobileStatus || storage.hideMobileStatus || !avatar) return;
+        if (findInReactTree(avatar, (child) => child?.key === "MobilePlatformAvatarIndicator")) return;
+        const nativeIndicator = findInReactTree(
+          avatar,
+          (child) => child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
+        );
+        if (nativeIndicator) nativeIndicator.props.isMobileOnline = false;
+        root.props.icon = /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "MobilePlatformAvatarIndicator", style: { position: "relative" } }, avatar, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { pointerEvents: "none", style: { position: "absolute", right: -2, bottom: -2 } }, renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")));
+      };
       const insertStatusIconsAfterName = (root, userId, key) => {
         if (findInReactTree(root, (child) => child?.key === key)) return true;
         const nameContainer = findInReactTree(
@@ -427,33 +447,19 @@ var __pluginBundle = (() => {
       });
       const Status = findByName("Status", false);
       patchBeforeIfFound("default", Status, (args) => {
-        const statusProps = args?.[0];
-        if (!statusProps) return;
-        const userId = statusProps.userId ?? statusProps.user?.id;
-        const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
-        if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
-        else if (mobileStatus) statusProps.isMobileOnline = true;
+        if (storage.hideMobileStatus && args?.[0]) args[0].isMobileOnline = false;
       });
       patchAfterIfFound("default", Status, (args) => {
         const statusProps = args?.[0];
         if (!statusProps?.isMobileOnline || storage.hideMobileStatus) return;
-        const userId = statusProps.userId ?? statusProps.user?.id;
-        const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
-        const status = mobileStatus || statusProps.status || "online";
-        return /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: {
-          width: 12,
-          height: 12,
-          borderRadius: 6,
-          backgroundColor: getStatusColor(status, storage.fallbackColors),
-          alignItems: "center",
-          justifyContent: "center"
-        } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform: "mobile", color: "#000", iconSize: 8 }));
+        return renderMobileStatusGlyph(statusProps.status || "online", "MobilePlatformStatusGlyph");
       });
       const Rows = findByProps("GuildMemberRow");
       if (Rows?.GuildMemberRow) {
         unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
           if (!storage.userList) return;
           if (!user || user.bot) return;
+          addAvatarMobileIndicator(res, user.id);
           if (storage.oldUserListIcons) return;
           insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
         }));
@@ -462,6 +468,7 @@ var __pluginBundle = (() => {
       const rowPatch = ([{ user }], res) => {
         if (!storage.userList) return;
         if (!user || user.bot) return;
+        addAvatarMobileIndicator(res, user.id);
         const label = res?.props?.label;
         const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
         if (!modifiedStatusIcons) {
