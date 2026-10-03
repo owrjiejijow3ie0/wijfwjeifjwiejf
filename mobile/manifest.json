@@ -7,8 +7,9 @@
             "id": "307215253811363843"
         }
     ],
-    "main": "index.tsx",
+    "main": "index.js",
     "vendetta": {
         "icon": "ic_person_status"
-    }
+    },
+    "hash": "0a167d1ca41e44ae047404b550c1294b1fce71c09cc84bffc6afb5d506e34817"
 }
