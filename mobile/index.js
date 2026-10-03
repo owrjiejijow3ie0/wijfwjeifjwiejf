@@ -321,20 +321,18 @@ var __pluginBundle = (() => {
           }
         });
       });
-      const ProfileBadges = findByTypeName("ProfileBadges") ?? findByTypeName("UserProfileBadges");
-      const displayNameByProps = ProfileBadges ? null : findByProps("DisplayName");
-      const displayNameByName = ProfileBadges || displayNameByProps ? null : findByName("DisplayName", false);
+      const displayNameByProps = findByProps("DisplayName");
+      const displayNameByName = displayNameByProps ? null : findByName("DisplayName", false);
       const displayNameTarget = displayNameByProps ?? displayNameByName;
-      const profileBadgeTarget = ProfileBadges ?? displayNameTarget;
-      const profileBadgeMethod = ProfileBadges ? "type" : displayNameByProps ? "DisplayName" : "default";
-      patchAfterIfFound(profileBadgeMethod, profileBadgeTarget, (args, res) => {
+      const displayNameMethod = displayNameByProps ? "DisplayName" : "default";
+      patchAfterIfFound(displayNameMethod, displayNameTarget, (args, res) => {
         if (!storage.profileUsername || !res?.props) return;
         const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], (entry) => entry?.user?.id)?.user?.id;
-        const badgeContainer = ProfileBadges ? res : findInReactTree(res, (child) => child?.props?.style?.flexDirection === "row") ?? res;
-        if (!userId || !badgeContainer?.props || findInReactTree(badgeContainer, (child) => child?.key === "ProfilePlatformIndicators")) return;
+        const profileNameRow = findInReactTree(res, (child) => child?.props?.style?.flexDirection === "row") ?? res;
+        if (!userId || !profileNameRow?.props || findInReactTree(profileNameRow, (child) => child?.key === "ProfilePlatformIndicators")) return;
         const indicators = /* @__PURE__ */ vendetta.metro.common.React.createElement(PresenceUpdatedContainer_default, { key: "ProfilePlatformIndicators" }, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: { flexDirection: "row", alignItems: "center" } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId })));
-        const children = badgeContainer.props.children;
-        badgeContainer.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
+        const children = profileNameRow.props.children;
+        profileNameRow.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
       });
       const Status = findByName("Status", false);
       patchBeforeIfFound("default", Status, (args) => {
