@@ -25,6 +25,12 @@ export default {
         storage.fallbackColors ??= false
         storage.oldUserListIcons ??= false
         const debugLabels = false
+        const patchAfterIfFound = (method, target, callback) => {
+            if (target) unpatches.push(patcher.after(method, target, callback))
+        }
+        const patchBeforeIfFound = (method, target, callback) => {
+            if (target) unpatches.push(patcher.before(method, target, callback))
+        }
 
         //spagetti code ahead
         //i'm sorry for whoever has to interpret this
@@ -161,7 +167,7 @@ export default {
         const PresenceStore = findByStoreName("PresenceStore");
 
         //tabs v2 dm header
-        unpatches.push(patcher.after("default",findByName("ChannelHeader",false),(args,res) => {
+        patchAfterIfFound("default", findByName("ChannelHeader", false), (args, res) => {
 
             if(!storage.dmTopBar) return;
             //window.ch = res
@@ -203,7 +209,7 @@ export default {
                             const arrowId = getAssetIDByName("arrow-right");
                             const container1 = findInReactTree(dmTopBar, m => m.props?.children[1]?.props?.source == arrowId)
 
-                            container1.props?.children?.push(<View 
+                            container1?.props?.children?.push(<View 
                                 key="DMTabsV2Header"    
                                 style={{
                                 flexDirection: 'row',
@@ -227,7 +233,7 @@ export default {
                 
 
             })
-        }));
+        });
 
         //icons on profile
         //might explode in a future update
@@ -245,7 +251,7 @@ export default {
 
 
         const ProfileBadges = findByTypeName("ProfileBadges") ?? findByTypeName("UserProfileBadges");
-        unpatches.push(patcher.after("type", ProfileBadges, (args, res) => {
+        patchAfterIfFound("type", ProfileBadges, (args, res) => {
             if (!storage.profileUsername || !res?.props) return;
 
             const userId = args[0]?.user?.id ?? args[0]?.userId;
@@ -260,15 +266,15 @@ export default {
             );
             const children = res.props.children;
             res.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
-        }));
+        });
 
         const Status = findByName("Status", false);
-        unpatches.push(patcher.before("default", Status, (args) => {
+        patchBeforeIfFound("default", Status, (args) => {
             if(!args) return;
             if(!args[0]) return;
             if(!storage.removeDefaultMobile)return;
             args[0].isMobileOnline = false
-        }))
+        })
 
         //might remove in the future, seems outdated
         //next 2 patches taken from here: https://github.com/Fierdetta/staff-tags/
@@ -352,7 +358,7 @@ export default {
         //Newest dm list patch (it's shit)
         //Requires forcing a re-render of the whole list manually
         const MessagesItemChannelContent = findByTypeName("MessagesItemChannelContent")
-        unpatches.push(patcher.after("type", MessagesItemChannelContent, (args, res) => {
+        patchAfterIfFound("type", MessagesItemChannelContent, (args, res) => {
             console.log("MessagesItemChannelContent-B", args, res)
             //window.micc = res
             const channel = args[0]?.channel
@@ -383,7 +389,7 @@ export default {
             //const userId = messageContainer?.props?.message?.author?.id
             //const userId = messageContainer?.props?.channel?.ownerId
             
-        }))
+        });
 
 
 

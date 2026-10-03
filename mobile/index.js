@@ -262,8 +262,14 @@ var __pluginBundle = (() => {
       (_e = storage).fallbackColors ?? (_e.fallbackColors = false);
       (_f = storage).oldUserListIcons ?? (_f.oldUserListIcons = false);
       const debugLabels = false;
+      const patchAfterIfFound = (method, target, callback) => {
+        if (target) unpatches.push(patcher.after(method, target, callback));
+      };
+      const patchBeforeIfFound = (method, target, callback) => {
+        if (target) unpatches.push(patcher.before(method, target, callback));
+      };
       const PresenceStore2 = findByStoreName("PresenceStore");
-      unpatches.push(patcher.after("default", findByName("ChannelHeader", false), (args, res) => {
+      patchAfterIfFound("default", findByName("ChannelHeader", false), (args, res) => {
         if (!storage.dmTopBar) return;
         if (!(res.type?.type?.name == "PrivateChannelHeader")) return;
         patcher.after("type", res.type, (args2, res2) => {
@@ -286,7 +292,7 @@ var __pluginBundle = (() => {
               } else {
                 const arrowId = getAssetIDByName("arrow-right");
                 const container1 = findInReactTree(dmTopBar, (m) => m.props?.children[1]?.props?.source == arrowId);
-                container1.props?.children?.push(/* @__PURE__ */ vendetta.metro.common.React.createElement(
+                container1?.props?.children?.push(/* @__PURE__ */ vendetta.metro.common.React.createElement(
                   View4,
                   {
                     key: "DMTabsV2Header",
@@ -314,23 +320,23 @@ var __pluginBundle = (() => {
             topIcons.props.children = /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId });
           }
         });
-      }));
+      });
       const ProfileBadges = findByTypeName("ProfileBadges") ?? findByTypeName("UserProfileBadges");
-      unpatches.push(patcher.after("type", ProfileBadges, (args, res) => {
+      patchAfterIfFound("type", ProfileBadges, (args, res) => {
         if (!storage.profileUsername || !res?.props) return;
         const userId = args[0]?.user?.id ?? args[0]?.userId;
         if (!userId || findInReactTree(res, (child) => child?.key === "ProfilePlatformIndicators")) return;
         const indicators = /* @__PURE__ */ vendetta.metro.common.React.createElement(PresenceUpdatedContainer_default, { key: "ProfilePlatformIndicators" }, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: { flexDirection: "row", alignItems: "center" } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId })));
         const children = res.props.children;
         res.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
-      }));
+      });
       const Status = findByName("Status", false);
-      unpatches.push(patcher.before("default", Status, (args) => {
+      patchBeforeIfFound("default", Status, (args) => {
         if (!args) return;
         if (!args[0]) return;
         if (!storage.removeDefaultMobile) return;
         args[0].isMobileOnline = false;
-      }));
+      });
       const Rows = findByProps("GuildMemberRow");
       if (Rows?.GuildMemberRow) {
         unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
@@ -392,7 +398,7 @@ var __pluginBundle = (() => {
       };
       findByTypeNameAll("UserRow").forEach((UserRow) => unpatches.push(patcher.after("type", UserRow, rowPatch)));
       const MessagesItemChannelContent = findByTypeName("MessagesItemChannelContent");
-      unpatches.push(patcher.after("type", MessagesItemChannelContent, (args, res) => {
+      patchAfterIfFound("type", MessagesItemChannelContent, (args, res) => {
         console.log("MessagesItemChannelContent-B", args, res);
         const channel = args[0]?.channel;
         if (channel?.recipients?.length == 1) {
@@ -407,7 +413,7 @@ var __pluginBundle = (() => {
             } }, orig, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId }));
           }
         }
-      }));
+      });
     },
     onUnload: () => {
       unpatches.forEach((u) => u());
