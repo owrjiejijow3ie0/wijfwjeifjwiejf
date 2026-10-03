@@ -87,10 +87,10 @@ const result = await build({
     plugins: [compatibilityPlugin]
 });
 
-const bundle = `(() => {\n${result.outputFiles[0].text}\nreturn __pluginBundle;\n})()`;
+const bundle = `(() => {\n${result.outputFiles[0].text}\nreturn __pluginBundle;\n})()\n`;
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 manifest.main = "index.js";
 manifest.hash = createHash("sha256").update(bundle).digest("hex");
 
-await writeFile(outputPath, `${bundle}\n`);
+await writeFile(outputPath, bundle);
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 4)}\n`);
