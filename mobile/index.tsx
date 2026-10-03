@@ -377,9 +377,14 @@ export default {
                     const nameIndex = nameChildren.findIndex((child) =>
                         typeof child === "string" || typeof child?.props?.children === "string"
                     );
+                    let serverTagIndex = -1;
+
+                    nameChildren.forEach((child, index) => {
+                        if (child?.type?.Types) serverTagIndex = index;
+                    });
 
                     if (nameIndex !== -1) {
-                        nameChildren.splice(nameIndex + 1, 0,
+                        nameChildren.splice((serverTagIndex >= 0 ? serverTagIndex : nameIndex) + 1, 0,
                             <View key="TabsV2MemberListStatusIconsView" style={{
                                 flexDirection: "row",
                                 alignItems: "center",

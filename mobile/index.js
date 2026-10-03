@@ -447,9 +447,13 @@ var __pluginBundle = (() => {
             const nameIndex = nameChildren.findIndex(
               (child) => typeof child === "string" || typeof child?.props?.children === "string"
             );
+            let serverTagIndex = -1;
+            nameChildren.forEach((child, index) => {
+              if (child?.type?.Types) serverTagIndex = index;
+            });
             if (nameIndex !== -1) {
               nameChildren.splice(
-                nameIndex + 1,
+                (serverTagIndex >= 0 ? serverTagIndex : nameIndex) + 1,
                 0,
                 /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "TabsV2MemberListStatusIconsView", style: {
                   flexDirection: "row",
