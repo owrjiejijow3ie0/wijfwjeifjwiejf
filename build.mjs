@@ -7,30 +7,28 @@ import pngjs from "pngjs";
 
 const { PNG } = pngjs;
 
-function trimTransparentPng(buffer) {
+function trimTransparentHorizontalPadding(buffer) {
     const source = PNG.sync.read(buffer);
     let left = source.width;
-    let top = source.height;
     let right = -1;
-    let bottom = -1;
 
     for (let y = 0; y < source.height; y++) {
         for (let x = 0; x < source.width; x++) {
             if (source.data[(y * source.width + x) * 4 + 3] === 0) continue;
             left = Math.min(left, x);
-            top = Math.min(top, y);
             right = Math.max(right, x);
-            bottom = Math.max(bottom, y);
         }
     }
 
-    if (right < left || bottom < top) return buffer;
+    if (right < left) return buffer;
 
-    const width = right - left + 1;
-    const height = bottom - top + 1;
+    const leftCrop = Math.min(6, left);
+    const rightCrop = Math.min(6, source.width - right - 1);
+    const width = source.width - leftCrop - rightCrop;
+    const height = source.height;
     const trimmed = new PNG({ width, height });
     for (let y = 0; y < height; y++) {
-        const sourceOffset = ((top + y) * source.width + left) * 4;
+        const sourceOffset = (y * source.width + leftCrop) * 4;
         source.data.copy(trimmed.data, y * width * 4, sourceOffset, sourceOffset + width * 4);
     }
     return PNG.sync.write(trimmed);
@@ -58,7 +56,7 @@ for (const [platform, { path, viewBox }] of Object.entries(platformIcons)) {
             : `<path fill="${color}" d="${path}"/>`;
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="${viewBox}">${badgePath}</svg>`;
         const renderedPng = new Resvg(svg, { fitTo: { mode: "width", value: 96 } }).render().asPng();
-        const png = platform === "mobile" ? trimTransparentPng(renderedPng) : renderedPng;
+        const png = platform === "mobile" ? trimTransparentHorizontalPadding(renderedPng) : renderedPng;
         platformBadgeSources[platform][status] = `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
     }
 }
