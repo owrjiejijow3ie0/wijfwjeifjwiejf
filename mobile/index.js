@@ -349,7 +349,7 @@ var __pluginBundle = (() => {
       });
       const profileBadgeProps = {};
       const profileBadgeImageConfig = /* @__PURE__ */ new WeakMap();
-      const BadgePlatformIcon = ({ platform, color, style, label }) => /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { accessible: true, accessibilityLabel: label, style }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color, iconSize: 16 }));
+      const BadgePlatformIcon = ({ platform, color, label }) => /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { accessible: true, accessibilityLabel: label }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color, iconSize: 16 }));
       const applyProfileBadgeProps = (_, element) => {
         const badge = profileBadgeProps[element?.props?.id];
         if (badge && element?.props) {
@@ -367,8 +367,7 @@ var __pluginBundle = (() => {
         const badge = profileBadgeImageConfig.get(element?.props?.source);
         if (!badge || !element?.props) return;
         element.type = BadgePlatformIcon;
-        element.props = { ...element.props, ...badge };
-        delete element.props.source;
+        element.props = { platform: badge.platform, color: badge.color, label: badge.label };
       };
       const jsxApi = globalThis.bunny?.api?.react?.jsx;
       if (jsxApi?.onJsxCreate) {

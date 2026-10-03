@@ -254,8 +254,8 @@ export default {
 
         const profileBadgeProps = {};
         const profileBadgeImageConfig = new WeakMap();
-        const BadgePlatformIcon = ({ platform, color, style, label }) => (
-            <View accessible accessibilityLabel={label} style={style}>
+        const BadgePlatformIcon = ({ platform, color, label }) => (
+            <View accessible accessibilityLabel={label}>
                 <StatusIcon platform={platform} color={color} iconSize={16} />
             </View>
         );
@@ -276,8 +276,7 @@ export default {
             const badge = profileBadgeImageConfig.get(element?.props?.source);
             if (!badge || !element?.props) return;
             element.type = BadgePlatformIcon;
-            element.props = { ...element.props, ...badge };
-            delete element.props.source;
+            element.props = { platform: badge.platform, color: badge.color, label: badge.label };
         };
         const jsxApi = (globalThis as any).bunny?.api?.react?.jsx;
 
