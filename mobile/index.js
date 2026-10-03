@@ -67,6 +67,32 @@ var __pluginBundle = (() => {
     vr: getAssetIDByName("ic_vr_headset_24px")
     // not provisional
   };
+  var themableIcons = {
+    desktop: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAMAAABiM0N1AAAAVFBMVEUAAACvv7+3u7+5u7+2ub+4u726vL65u765vL65vMG5u723ub23v7+3t7+6vL+4ur+6u765u764vL+4ur23t7+7vb+3ur25ur64ur+7u766ur6vr7/+1nXbAAAAHHRSTlMAEEB/UHDv/99fgIAgQJ+f7++fnyB/YN9vTz8QSaZf3QAAAI1JREFUeAHt1tUBwkAURNEXHZzg1n+d2Fc8u4OTOQXcyKqJ3ARh5C22qiQFYTC0khFIYyuYgDYthGagzQuhDLRFIYS7yBPuakLmSaF2CimkkEIKKfT8I5un0MdCT7v6LUFbFUIhaGsr2IAUWcl2B0K2t6pDVKttGR5P3BJvpxCnfdTMHVo9NaRQ1MpKRC5jHSw3VFQzIwAAAABJRU5ErkJggg==",
+      path: "PlatformIndicators/Desktop.png"
+    },
+    web: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAQAAAD/5HvMAAADgklEQVR42u3a32vVdRzH8VdOv2NzGzM7bkp0E9F9RQSbOmK6groQpeugOzXJfnCW3YwgC4IyHCldrBmFELtQRxfK2MHp1sjVZRfBMSJFYu6cMUnOOZPz9Gb45uyc79fv5/tDvDiPv+DJh/fn8+HL56umpqbHFZsZ4hjjzJOnQJkyBfLMM87H7GWzHh16OcoVKgQpM8N79Cht7GaSVcJa5QK7lBZe5SpRzDCgpLGdH6gS3SRPKzm8xTJxFTmgJNDKtyRllFbFQxfTRLVCvSk6FR3b+J3onuRTlllvgUzk1YmVsyJJdPMN1bqkzmizM00cc1rDIP9SawpPrjhFPAf1AN1cotZJ940ezwKb1q33BLX2Kzx2sBwzZ7vWoYXvAVOkV2FxlqjuMMtBNqkBNpIDzI/h7ywnTsfIP5gquxUGV3EiB7zMPcxlPRwDOJITTgNmpx6GyZSDnqKAOa9g9LKKIzniA0yFbQrC+5B6UDf/Y44oCFdwdUPOGMfkgr8kyrg6Lmf0YUq0yw9DuLnBcTw5YwNFzB754RhmkYaUCH7BDMsPZzDDZFMM+gQzJj/8inlTYiS1oNcws/LD35jnJUtKPOgFzHX5YQmzdmCRTSXoGcyi/FDGtEqWlHhQG6YULsjTA4zg5iZf4CkAXrig25gtUowk+FwB2IpZDDfUz8pEWiUF4DnM9XDbfkiKl6QAvB5u248H38KMJBZ0FDMW7uo4qwbIJhQ0gcnKD3sxN3lCirNKgZfrf5hB+aGdEuYVNUQ2dtAuTIk2+WMG87V8MBIzaBQzrdDDVqBDPuIE0cUy5rCC0MMq5lAqQR9hKmRcPoNu0ZF0EN0sYs7JBAyc+UwNsUJYd7nGO2zUGr4CTL9MqMGu8KIaYB43C2yVJPq4h8kpDAaoYv6kS3U4jKvfaGELeUyVfoXDT4C5wAatg8cfuHqbS4A54/K8UgTMd/WnNjuckyqAKdCj8DhArdO0NFilQ8xxhyiq7JMbRqk1GXAEuDshV3hMUesvXkoo6CKe3NHJArUqfEln7KBrdCgaMnVJcIsPa6OcczKKjk6mqFfkFH20RAi6SIfiweMkjS0xwTBvEFaVE3hKAvspEleBfUoOvTGfOH+mJ40X6ctEkaNfaWEn56kQVoVz9CltZDhCjhJBSuR4l4weHdrZwzBjzJFniTJlbpNnljGyDNLW/BmlqelxdR++AoGbDB4jjAAAAABJRU5ErkJggg==",
+      path: "PlatformIndicators/Web.png"
+    },
+    mobile: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAXVBMVEUAAAAwMDgwMDUwMDUuMDYwMDYvMTcvMTYvMTYwMDYwMDUvMTYwMjUvMTUvMjYvMTUuMDUuMDQvMDUtMTUwMDgvMDUwMDAtMDYuMDYwMDAtMDUvMDYuMDUtMDcpMTo5aAq8AAAAH3RSTlMAIGBvf1C//89fMN9g75+/j3+fP0C/IFBfMGDPb08fcZ9WCgAAAMNJREFUeAHt2YWNxQAMg2EX/fiVud1/zBuhSaRjfwv8UsQx5J9L0iw/VySIyUoaXa7wu93pcE/g9KDTFS4F+amF5Em3ZwK7FwPeMEsYcoNVxZAaViX5uTd6MuQJKwY5A01u9goFWph1fyKggAIKKKCAAgoooIACCiiggAIKKKCAAgoooIACn/l9d/t3gU/fcEqG9LDKGVLB6saQAZ97owZ2w5NuzwEOKd1G4FMLE5wG36Y/w29ZadRviBn2/Nw2HfjTPgD3/UVA1TCAGgAAAABJRU5ErkJggg==",
+      path: "PlatformIndicators/Mobile.png"
+    },
+    embedded: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAMAAABiM0N1AAAAk1BMVEUAAAC3u7+4ur+5vL+5u765u7+6vL+2ub+3v7+6u7+5vL66v7+6vL65u761ur+4u765vL+3t7+6u765u7+9vb23t7+7vb+6u766ur+5ur6/v7+vv7+9vcW1tb+5u727u763ur25vL+6vL+3ub24ur+5u7+4vL+5ur66ur64ur25vL+6u764ur24u722uby5u76vr7/eehxsAAAAMXRSTlMAQJ/f/8+fUCC/3zDv7zC/UEDvfx8gf88w3xAQHzCAT2Bfb4Bvj5/PP6+vv59wUM8QEONx+AAAAWZJREFUeAHt1dWa6zAMBOA5PSqzs2Vmhvd/uWWcVFHqr5f+r+3JRqtJ8UhBEAT/Mv8lpWwuD02hKHcpFXBTuSJ3qtZwQ0HPUVULiCuJhzpiGuKlCZaTL3gnxEVPaLWdkAxYJznIdfGmy0k9MEkOivChLQSkbwS18KElZEBBLSMIX4QMuRxaEJ0vCBndCkJMbEZjIRO6MTWCqjWlRjO6MTeCpLoooDWuCFvSjcgK0pYzohsrM0hZzhXdWJtBynJyR4rGv19dzrp3EC3nhoJKZpCynNxalzqIlrPKU7WDlOXUym8H0XIOufy+htxZX9tHBU24/L5mXH5fSy6/r4jL/8sOidYJv2x7fu0k84SgIn/Qmb50dT2oB6YXk+tf4hElWuuPdeaIlCFx/fkLeM+Q1Ferw3RQZ9SmP8jQlR9H/NZ3tKmG08+sW/SMnrxzZ6Qy/TrfBWkdL+Lq0RUptaYHJyU+HwRB4O0FjTMnvIkvoBQAAAAASUVORK5CYII=",
+      path: "PlatformIndicators/Console.png"
+    },
+    vr: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAMAAABiM0N1AAAANlBMVEVMaXHv7/Hv7/Hv7/Hv7/Hv7/Hv7/Hv7/Hv7/Hs7PTu7vHv7/Hv7/Hv7/Hv7/Hv7/Hv7/Hv7/EEUZf/AAAAEXRSTlMAzGV4UNr78OcJFDufKb6ri3Gd0SEAAAHQSURBVFjD7VbHdsQgDDRNiOby/z+bjY0N2LRk95C8xxwNHo0KkqZpYGBg4PMwbBa4ZYFiZqaPRVGxNSCoavPwJs0ujLbk2K0TtipKz1s3Zl3RE/PILGKmsqbLL8JcwZ5y9LJmi3E+k8Ib1UH8xcI95Utnaeb2TAnmbzLP01NsnilfBEcBCW9FVXWpwzvxrGYiE785ASC1p2DO3M5xlWty5ZREyrEmKlQK0Tedweu1npUdNPxDVBrlHe5bIHQQue1m/YVIEKjIGKmGG7ZbPKYpqnsMnsGqqxUQNSzpP8WdJoSaNUop7nwFInZF600ijT0F3kE06dXS6RNEXfh7ROI/EMG7RPAM2++I8D48wqefZe0cJy74Bo+HaixBJPbRLXX0k5ueDenWgtzVYojLz670edNL55y2wSgPQPOtFhPbirPlKYlDPOyBPwUtjD8auzr6GwYXDKRrA4RAucMFmR0PvuXjeZ3K+wIiT++MD8Wa32n8KSxc67ArSOYcOzln6rTmi5eKhWbMIbMGyV2gkZkjKE4ZVr6cM1Lp6qxslN6ZoDodeLoVi6igTbqlYmOJ0muIBrIku4oFK7Ix9I7atAQ2SWym1F5HEjB3NDAwMPAuvgCPRUw2yKsaYwAAAABJRU5ErkJggg==",
+      path: "PlatformIndicators/VR.png"
+    }
+  };
+  function getPlatformBadgeSource(platform) {
+    const icon = themableIcons[platform];
+    return icon ? { uri: icon.url } : null;
+  }
   function StatusIcon(props) {
     const { platform, color } = props;
     const iconSize = props.iconSize ?? 16;
@@ -322,35 +348,44 @@ var __pluginBundle = (() => {
         });
       });
       const profileBadgeProps = {};
-      const BadgePlatformIcon = ({ platform, color, label }) => /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { accessible: true, accessibilityLabel: label, style: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        backgroundColor: "rgba(255, 255, 255, 0.08)",
-        alignItems: "center",
-        justifyContent: "center"
-      } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color, iconSize: 22 }));
-      const replaceProfileBadge = (_, element) => {
+      const profileBadgeImageConfig = /* @__PURE__ */ new WeakMap();
+      const BadgePlatformIcon = ({ platform, color, style, label }) => /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { accessible: true, accessibilityLabel: label, style }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color, iconSize: 16 }));
+      const applyProfileBadgeProps = (_, element) => {
         const badge = profileBadgeProps[element?.props?.id];
         if (badge && element?.props) {
-          element.type = BadgePlatformIcon;
-          element.props = badge;
+          element.props.source = badge.source;
+          element.props.label = badge.label;
+          element.props.id = badge.id;
         }
+      };
+      const applyRenderBadgeProps = (_, element) => {
+        const badge = profileBadgeProps[element?.props?.id];
+        if (badge && element?.props) Object.assign(element.props, badge);
+      };
+      const applyBadgeImage = (component, element) => {
+        if (component?.name !== "Image" && component !== General.Image) return;
+        const badge = profileBadgeImageConfig.get(element?.props?.source);
+        if (!badge || !element?.props) return;
+        element.type = BadgePlatformIcon;
+        element.props = { ...element.props, ...badge };
+        delete element.props.source;
       };
       const jsxApi = globalThis.bunny?.api?.react?.jsx;
       if (jsxApi?.onJsxCreate) {
-        jsxApi.onJsxCreate("ProfileBadge", replaceProfileBadge);
-        jsxApi.onJsxCreate("RenderBadge", replaceProfileBadge);
+        jsxApi.onJsxCreate("ProfileBadge", applyProfileBadgeProps);
+        jsxApi.onJsxCreate("RenderBadge", applyRenderBadgeProps);
+        jsxApi.onJsxCreate("Image", applyBadgeImage);
         unpatches.push(() => {
-          jsxApi.deleteJsxCreate?.("ProfileBadge", replaceProfileBadge);
-          jsxApi.deleteJsxCreate?.("RenderBadge", replaceProfileBadge);
+          jsxApi.deleteJsxCreate?.("ProfileBadge", applyProfileBadgeProps);
+          jsxApi.deleteJsxCreate?.("RenderBadge", applyRenderBadgeProps);
+          jsxApi.deleteJsxCreate?.("Image", applyBadgeImage);
         });
       } else {
         const jsxRuntime = findByProps("jsx", "jsxs");
         const applyBadgeJsx = ([component], element) => {
-          if (component?.name === "ProfileBadge" || component?.name === "RenderBadge") {
-            replaceProfileBadge(component, element);
-          }
+          if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element);
+          if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element);
+          applyBadgeImage(component, element);
         };
         patchAfterIfFound("jsx", jsxRuntime, applyBadgeJsx);
         patchAfterIfFound("jsxs", jsxRuntime, applyBadgeJsx);
@@ -365,9 +400,12 @@ var __pluginBundle = (() => {
         for (const [platform, status] of platformStatuses.reverse()) {
           const id = `platform-indicator-${userId}-${platform}`;
           const label = `${platform.charAt(0).toUpperCase()}${platform.slice(1)} (${status})`;
+          const source = getPlatformBadgeSource(platform);
           const color = getStatusColor(status, storage.fallbackColors);
+          profileBadgeImageConfig.set(source, { platform, color, label });
           profileBadgeProps[id] = {
             id,
+            source,
             platform,
             color,
             label,
