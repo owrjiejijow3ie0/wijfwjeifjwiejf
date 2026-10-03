@@ -395,17 +395,25 @@ var __pluginBundle = (() => {
         });
       });
       const profileBadgeProps = {};
+      const tightenMobileBadgeSpacing = (badge, element) => {
+        if (badge?.platform !== "mobile" || !element?.props) return;
+        element.props.style = [element.props.style, { marginRight: -3 }];
+      };
       const applyProfileBadgeProps = (_, element) => {
         const badge = profileBadgeProps[element?.props?.id];
         if (badge && element?.props) {
           element.props.source = badge.source;
           element.props.label = badge.label;
           element.props.id = badge.id;
+          tightenMobileBadgeSpacing(badge, element);
         }
       };
       const applyRenderBadgeProps = (_, element) => {
         const badge = profileBadgeProps[element?.props?.id];
-        if (badge && element?.props) Object.assign(element.props, badge);
+        if (badge && element?.props) {
+          Object.assign(element.props, badge);
+          tightenMobileBadgeSpacing(badge, element);
+        }
       };
       const jsxApi = globalThis.bunny?.api?.react?.jsx;
       if (jsxApi?.onJsxCreate) {
@@ -440,6 +448,7 @@ var __pluginBundle = (() => {
             id,
             source: { uri: iconUri },
             label,
+            platform,
             userId
           };
           badges.unshift({ id, description: label, icon: "platform-indicator" });
