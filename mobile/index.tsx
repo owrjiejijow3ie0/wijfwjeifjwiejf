@@ -251,11 +251,17 @@ export default {
 
 
         const ProfileBadges = findByTypeName("ProfileBadges") ?? findByTypeName("UserProfileBadges");
-        patchAfterIfFound("type", ProfileBadges, (args, res) => {
+        const displayNameTarget = ProfileBadges ? null : findByProps("DisplayName");
+        const profileBadgeTarget = ProfileBadges ?? displayNameTarget;
+        const profileBadgeMethod = ProfileBadges ? "type" : "DisplayName";
+        patchAfterIfFound(profileBadgeMethod, profileBadgeTarget, (args, res) => {
             if (!storage.profileUsername || !res?.props) return;
 
-            const userId = args[0]?.user?.id ?? args[0]?.userId;
-            if (!userId || findInReactTree(res, child => child?.key === "ProfilePlatformIndicators")) return;
+            const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], entry => entry?.user?.id)?.user?.id;
+            const badgeContainer = ProfileBadges
+                ? res
+                : findInReactTree(res, child => child?.props?.style?.flexDirection === "row");
+            if (!userId || !badgeContainer?.props || findInReactTree(badgeContainer, child => child?.key === "ProfilePlatformIndicators")) return;
 
             const indicators = (
                 <PresenceUpdatedContainer key="ProfilePlatformIndicators">
@@ -264,8 +270,8 @@ export default {
                     </View>
                 </PresenceUpdatedContainer>
             );
-            const children = res.props.children;
-            res.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
+            const children = badgeContainer.props.children;
+            badgeContainer.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
         });
 
         const Status = findByName("Status", false);
