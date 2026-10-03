@@ -2,10 +2,32 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { Resvg } from "@resvg/resvg-js";
 
 const root = new URL(".", import.meta.url);
 const manifestPath = fileURLToPath(new URL("mobile/manifest.json", root));
 const outputPath = fileURLToPath(new URL("mobile/index.js", root));
+const platformIcons = JSON.parse(await readFile(fileURLToPath(new URL("mobile/platformIcons.json", root)), "utf8"));
+const badgeSourcesPath = fileURLToPath(new URL("mobile/platformBadgeSources.json", root));
+const statusColors = {
+    online: "#23a55a",
+    dnd: "#f23f43",
+    idle: "#f0b232",
+    offline: "#80848e"
+};
+const platformBadgeSources = {};
+
+for (const [platform, { path, viewBox }] of Object.entries(platformIcons)) {
+    platformBadgeSources[platform] = {};
+
+    for (const [status, color] of Object.entries(statusColors)) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="${viewBox}"><path fill="${color}" d="${path}"/></svg>`;
+        const png = new Resvg(svg, { fitTo: { mode: "width", value: 24 } }).render().asPng();
+        platformBadgeSources[platform][status] = `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
+    }
+}
+
+await writeFile(badgeSourcesPath, `${JSON.stringify(platformBadgeSources)}\n`);
 
 const modules = {
     "@vendetta": {
