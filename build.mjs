@@ -22,7 +22,7 @@ for (const [platform, { path, viewBox }] of Object.entries(platformIcons)) {
 
     for (const [status, color] of Object.entries(statusColors)) {
         const badgePath = platform === "mobile"
-            ? `<g transform="translate(100 150) scale(0.8)"><path fill="${color}" d="${path}"/></g>`
+            ? `<g transform="translate(50 150) scale(0.9 0.8)"><path fill="${color}" d="${path}"/></g>`
             : `<path fill="${color}" d="${path}"/>`;
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="${viewBox}">${badgePath}</svg>`;
         const png = new Resvg(svg, { fitTo: { mode: "width", value: 96 } }).render().asPng();
