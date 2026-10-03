@@ -289,6 +289,29 @@ var __pluginBundle = (() => {
       const patchBeforeIfFound = (method, target, callback) => {
         if (target) unpatches.push(patcher.before(method, target, callback));
       };
+      const insertStatusIconsAfterName = (root, userId, key) => {
+        if (findInReactTree(root, (child) => child?.key === key)) return true;
+        const nameContainer = findInReactTree(
+          root,
+          (child) => Array.isArray(child?.props?.children) && child.props.children.some((item) => typeof item === "string" || typeof item?.props?.children === "string")
+        );
+        if (!nameContainer) return false;
+        const nameChildren = nameContainer.props.children;
+        const nameIndex = nameChildren.findIndex(
+          (item) => typeof item === "string" || typeof item?.props?.children === "string"
+        );
+        if (nameIndex === -1) return false;
+        let serverTagIndex = -1;
+        nameChildren.forEach((item, index) => {
+          if (item?.type?.Types && item.props?.type === 0) serverTagIndex = index;
+        });
+        nameChildren.splice(
+          (serverTagIndex >= 0 ? serverTagIndex : nameIndex) + 1,
+          0,
+          /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key, style: { flexDirection: "row", alignItems: "center", marginLeft: 2 } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, key) : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId, small: true }))
+        );
+        return true;
+      };
       const PresenceStore2 = findByStoreName("PresenceStore");
       patchAfterIfFound("default", findByName("ChannelHeader", false), (args, res) => {
         if (!storage.dmTopBar) return;
@@ -405,35 +428,13 @@ var __pluginBundle = (() => {
         unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
           if (!storage.userList) return;
           if (storage.oldUserListIcons) return;
-          const statusIconsView = findInReactTree(res, (c) => c.key == "GuildMemberRowStatusIconsView");
-          if (!statusIconsView) {
-            const row = findInReactTree(res, (c) => c.props.style.flexDirection === "row");
-            row.props.children.splice(
-              2,
-              0,
-              /* @__PURE__ */ vendetta.metro.common.React.createElement(
-                View4,
-                {
-                  key: "GuildMemberRowStatusIconsView",
-                  style: {
-                    flexDirection: "row",
-                    marginLeft: 2
-                  }
-                },
-                debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, "GMRSIV") : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId: user.id, small: true })
-              )
-            );
-          }
+          insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
         }));
       }
       let patchedAvatar = false;
       const rowPatch = ([{ user }], res) => {
         if (!storage.userList) return;
         const label = res?.props?.label;
-        const nameContainer = findInReactTree(
-          label,
-          (c) => Array.isArray(c?.props?.children) && c.props.children.some((child) => typeof child === "string" || typeof child?.props?.children === "string")
-        );
         const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
         if (!modifiedStatusIcons) {
           if (storage.oldUserListIcons) {
@@ -442,27 +443,7 @@ var __pluginBundle = (() => {
               flexDirection: "row",
               alignItems: "center"
             }, key: "TabsV2MemberListStatusIconsView" }, label, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: { flexDirection: "row", alignItems: "center", marginLeft: 2 } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, "TV2MLSIV") : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId: user.id, small: true })));
-          } else if (nameContainer) {
-            const nameChildren = nameContainer.props.children;
-            const nameIndex = nameChildren.findIndex(
-              (child) => typeof child === "string" || typeof child?.props?.children === "string"
-            );
-            let serverTagIndex = -1;
-            nameChildren.forEach((child, index) => {
-              if (child?.type?.Types && child.props?.type === 0) serverTagIndex = index;
-            });
-            if (nameIndex !== -1) {
-              nameChildren.splice(
-                (serverTagIndex >= 0 ? serverTagIndex : nameIndex) + 1,
-                0,
-                /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "TabsV2MemberListStatusIconsView", style: {
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: 2
-                } }, debugLabels ? /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, null, "TV2MLSIV") : /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId: user.id, small: true }))
-              );
-            }
-          }
+          } else insertStatusIconsAfterName(label, user.id, "TabsV2MemberListStatusIconsView");
           if (!patchedAvatar && res?.props?.icon?.type) {
             unpatches.push(patcher.before("type", res.props.icon.type, (args) => {
               if (storage.hideMobileStatus) {
