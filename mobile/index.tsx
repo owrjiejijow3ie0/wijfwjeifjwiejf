@@ -380,7 +380,7 @@ export default {
                     let serverTagIndex = -1;
 
                     nameChildren.forEach((child, index) => {
-                        if (child?.type?.Types) serverTagIndex = index;
+                        if (child?.type?.Types && child.props?.type === 0) serverTagIndex = index;
                     });
 
                     if (nameIndex !== -1) {
