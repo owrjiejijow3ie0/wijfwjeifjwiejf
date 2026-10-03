@@ -257,9 +257,17 @@ export default {
         patchAfterIfFound(displayNameMethod, displayNameTarget, (args, res) => {
             if (!storage.profileUsername || !res?.props) return;
 
-            const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], entry => entry?.user?.id)?.user?.id;
             const profileNameRow = findInReactTree(res, child => child?.props?.style?.flexDirection === "row") ?? res;
-            if (!userId || !profileNameRow?.props || findInReactTree(profileNameRow, child => child?.key === "ProfilePlatformIndicators")) return;
+            if (!profileNameRow?.props) return;
+
+            if (!findInReactTree(profileNameRow, child => child?.key === "ProfileIndicatorDebug")) {
+                const debugMarker = <Text key="ProfileIndicatorDebug" style={{ color: "#ff4b4b", fontSize: 12 }}>PI hook</Text>;
+                const children = profileNameRow.props.children;
+                profileNameRow.props.children = Array.isArray(children) ? [...children, debugMarker] : [children, debugMarker];
+            }
+
+            const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], entry => entry?.user?.id)?.user?.id;
+            if (!userId || findInReactTree(profileNameRow, child => child?.key === "ProfilePlatformIndicators")) return;
 
             const indicators = (
                 <PresenceUpdatedContainer key="ProfilePlatformIndicators">

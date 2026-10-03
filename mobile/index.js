@@ -327,9 +327,15 @@ var __pluginBundle = (() => {
       const displayNameMethod = displayNameByProps ? "DisplayName" : "default";
       patchAfterIfFound(displayNameMethod, displayNameTarget, (args, res) => {
         if (!storage.profileUsername || !res?.props) return;
-        const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], (entry) => entry?.user?.id)?.user?.id;
         const profileNameRow = findInReactTree(res, (child) => child?.props?.style?.flexDirection === "row") ?? res;
-        if (!userId || !profileNameRow?.props || findInReactTree(profileNameRow, (child) => child?.key === "ProfilePlatformIndicators")) return;
+        if (!profileNameRow?.props) return;
+        if (!findInReactTree(profileNameRow, (child) => child?.key === "ProfileIndicatorDebug")) {
+          const debugMarker = /* @__PURE__ */ vendetta.metro.common.React.createElement(Text3, { key: "ProfileIndicatorDebug", style: { color: "#ff4b4b", fontSize: 12 } }, "PI hook");
+          const children2 = profileNameRow.props.children;
+          profileNameRow.props.children = Array.isArray(children2) ? [...children2, debugMarker] : [children2, debugMarker];
+        }
+        const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], (entry) => entry?.user?.id)?.user?.id;
+        if (!userId || findInReactTree(profileNameRow, (child) => child?.key === "ProfilePlatformIndicators")) return;
         const indicators = /* @__PURE__ */ vendetta.metro.common.React.createElement(PresenceUpdatedContainer_default, { key: "ProfilePlatformIndicators" }, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { style: { flexDirection: "row", alignItems: "center" } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId })));
         const children = profileNameRow.props.children;
         profileNameRow.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
