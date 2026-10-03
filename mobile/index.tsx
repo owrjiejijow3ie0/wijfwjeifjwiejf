@@ -3,7 +3,8 @@ import { findByDisplayName, findByName, findByProps, findByPropsAll, findByStore
 import {General} from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils";
 import StatusIcons, { getUserStatuses } from "./StatusIcons";
-import { getPlatformBadgeSource } from "./StatusIcon";
+import StatusIcon, { getPlatformBadgeSource } from "./StatusIcon";
+import { getStatusColor } from "./colors";
 import { getAssetByName, getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
 import Settings from "./settings";
@@ -252,6 +253,8 @@ export default {
 
 
         const profileBadgeProps = {};
+        const profileBadgeImageConfig = new WeakMap();
+        const BadgePlatformIcon = ({ platform, color }) => <StatusIcon platform={platform} color={color} iconSize={16} />;
         const applyProfileBadgeProps = (_, element) => {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) {
@@ -264,20 +267,30 @@ export default {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) Object.assign(element.props, badge);
         };
+        const applyBadgeImage = (component, element) => {
+            if (component?.name !== "Image" && component !== General.Image) return;
+            const iconConfig = profileBadgeImageConfig.get(element?.props?.source);
+            if (!iconConfig || !element?.props) return;
+            element.type = BadgePlatformIcon;
+            element.props = iconConfig;
+        };
         const jsxApi = (globalThis as any).bunny?.api?.react?.jsx;
 
         if (jsxApi?.onJsxCreate) {
             jsxApi.onJsxCreate("ProfileBadge", applyProfileBadgeProps);
             jsxApi.onJsxCreate("RenderBadge", applyRenderBadgeProps);
+            jsxApi.onJsxCreate("Image", applyBadgeImage);
             unpatches.push(() => {
                 jsxApi.deleteJsxCreate?.("ProfileBadge", applyProfileBadgeProps);
                 jsxApi.deleteJsxCreate?.("RenderBadge", applyRenderBadgeProps);
+                jsxApi.deleteJsxCreate?.("Image", applyBadgeImage);
             });
         } else {
             const jsxRuntime = findByProps("jsx", "jsxs");
             const applyBadgeJsx = ([component], element) => {
                 if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element);
                 if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element);
+                applyBadgeImage(component, element);
             };
             patchAfterIfFound("jsx", jsxRuntime, applyBadgeJsx);
             patchAfterIfFound("jsxs", jsxRuntime, applyBadgeJsx);
@@ -296,11 +309,14 @@ export default {
                 .filter(([platform]) => getPlatformBadgeSource(platform));
 
             for (const [platform, status] of platformStatuses.reverse()) {
-                const id = `platform-indicator-${platform}`;
+                const id = `platform-indicator-${userId}-${platform}`;
                 const label = `${platform.charAt(0).toUpperCase()}${platform.slice(1)} (${status})`;
+                const source = getPlatformBadgeSource(platform);
+                const color = getStatusColor(status, storage.fallbackColors);
+                profileBadgeImageConfig.set(source, { platform, color });
                 profileBadgeProps[id] = {
                     id,
-                    source: getPlatformBadgeSource(platform),
+                    source,
                     label,
                     userId
                 };

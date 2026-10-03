@@ -348,6 +348,8 @@ var __pluginBundle = (() => {
         });
       });
       const profileBadgeProps = {};
+      const profileBadgeImageConfig = /* @__PURE__ */ new WeakMap();
+      const BadgePlatformIcon = ({ platform, color }) => /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform, color, iconSize: 16 });
       const applyProfileBadgeProps = (_, element) => {
         const badge = profileBadgeProps[element?.props?.id];
         if (badge && element?.props) {
@@ -360,19 +362,29 @@ var __pluginBundle = (() => {
         const badge = profileBadgeProps[element?.props?.id];
         if (badge && element?.props) Object.assign(element.props, badge);
       };
+      const applyBadgeImage = (component, element) => {
+        if (component?.name !== "Image" && component !== General.Image) return;
+        const iconConfig = profileBadgeImageConfig.get(element?.props?.source);
+        if (!iconConfig || !element?.props) return;
+        element.type = BadgePlatformIcon;
+        element.props = iconConfig;
+      };
       const jsxApi = globalThis.bunny?.api?.react?.jsx;
       if (jsxApi?.onJsxCreate) {
         jsxApi.onJsxCreate("ProfileBadge", applyProfileBadgeProps);
         jsxApi.onJsxCreate("RenderBadge", applyRenderBadgeProps);
+        jsxApi.onJsxCreate("Image", applyBadgeImage);
         unpatches.push(() => {
           jsxApi.deleteJsxCreate?.("ProfileBadge", applyProfileBadgeProps);
           jsxApi.deleteJsxCreate?.("RenderBadge", applyRenderBadgeProps);
+          jsxApi.deleteJsxCreate?.("Image", applyBadgeImage);
         });
       } else {
         const jsxRuntime = findByProps("jsx", "jsxs");
         const applyBadgeJsx = ([component], element) => {
           if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element);
           if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element);
+          applyBadgeImage(component, element);
         };
         patchAfterIfFound("jsx", jsxRuntime, applyBadgeJsx);
         patchAfterIfFound("jsxs", jsxRuntime, applyBadgeJsx);
@@ -385,11 +397,14 @@ var __pluginBundle = (() => {
         const statuses = cachedStatuses && Object.keys(cachedStatuses).length ? cachedStatuses : PresenceStore2.getClientStatus?.(userId) ?? cachedStatuses;
         const platformStatuses = Object.entries(statuses ?? {}).filter(([platform]) => getPlatformBadgeSource(platform));
         for (const [platform, status] of platformStatuses.reverse()) {
-          const id = `platform-indicator-${platform}`;
+          const id = `platform-indicator-${userId}-${platform}`;
           const label = `${platform.charAt(0).toUpperCase()}${platform.slice(1)} (${status})`;
+          const source = getPlatformBadgeSource(platform);
+          const color = getStatusColor(status, storage.fallbackColors);
+          profileBadgeImageConfig.set(source, { platform, color });
           profileBadgeProps[id] = {
             id,
-            source: getPlatformBadgeSource(platform),
+            source,
             label,
             userId
           };
