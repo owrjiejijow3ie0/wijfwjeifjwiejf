@@ -3,6 +3,7 @@ import { findByDisplayName, findByName, findByProps, findByPropsAll, findByStore
 import {General} from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils";
 import StatusIcons, { getUserStatuses } from "./StatusIcons";
+import { getPlatformBadgeSource } from "./StatusIcon";
 import { getAssetByName, getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
 import Settings from "./settings";
@@ -251,13 +252,6 @@ export default {
 
 
         const profileBadgeProps = {};
-        const profileBadgeSources = {
-            desktop: getAssetIDByName("ic_monitor_24px"),
-            web: getAssetIDByName("ic_globe_24px"),
-            mobile: getAssetIDByName("ic_mobile_device"),
-            embedded: getAssetIDByName("ic_monitor_24px"),
-            vr: getAssetIDByName("ic_vr_headset_24px")
-        };
         const applyProfileBadgeProps = (_, element) => {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) {
@@ -294,16 +288,19 @@ export default {
             const userId = args[0]?.userId;
             if (!storage.profileUsername || !userId || !Array.isArray(badges)) return;
 
-            const statuses = getUserStatuses(userId);
+            const cachedStatuses = getUserStatuses(userId);
+            const statuses = cachedStatuses && Object.keys(cachedStatuses).length
+                ? cachedStatuses
+                : PresenceStore.getClientStatus?.(userId) ?? cachedStatuses;
             const platformStatuses = Object.entries(statuses ?? {})
-                .filter(([platform]) => profileBadgeSources[platform]);
+                .filter(([platform]) => getPlatformBadgeSource(platform));
 
             for (const [platform, status] of platformStatuses.reverse()) {
                 const id = `platform-indicator-${platform}`;
                 const label = `${platform.charAt(0).toUpperCase()}${platform.slice(1)} (${status})`;
                 profileBadgeProps[id] = {
                     id,
-                    source: profileBadgeSources[platform],
+                    source: getPlatformBadgeSource(platform),
                     label,
                     userId
                 };

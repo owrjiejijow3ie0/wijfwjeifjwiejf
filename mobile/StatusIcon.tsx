@@ -55,6 +55,11 @@ const themableIcons = {
 
 
 
+export function getPlatformBadgeSource(platform) {
+    const icon = themableIcons[platform];
+    return icon ? { uri: icon.url } : null;
+}
+
 export default function StatusIcon(props) {
     const { platform, color } = props;
     const iconSize = props.iconSize ?? 16;
