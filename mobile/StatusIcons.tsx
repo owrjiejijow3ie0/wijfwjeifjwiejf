@@ -67,14 +67,11 @@ export default function StatusIcons(props) {
     const iconSize = props.size ?? (props.small ? 17 : 16);
 
     const statuses = getUserStatuses(userId)
-    const orderedPlatforms = props.mobileFirst && statuses?.mobile
-        ? ["mobile", ...platformOrder.filter((platform) => platform !== "mobile")]
-        : platformOrder;
     const platformStatuses = Object.entries(statuses ?? {})
         .sort(([left], [right]) => {
-            const leftOrder = orderedPlatforms.indexOf(left);
-            const rightOrder = orderedPlatforms.indexOf(right);
-            return (leftOrder < 0 ? orderedPlatforms.length : leftOrder) - (rightOrder < 0 ? orderedPlatforms.length : rightOrder);
+            const leftOrder = platformOrder.indexOf(left);
+            const rightOrder = platformOrder.indexOf(right);
+            return (leftOrder < 0 ? platformOrder.length : leftOrder) - (rightOrder < 0 ? platformOrder.length : rightOrder);
         });
     return (
         <ReactNative.View style={[{ flexDirection: "row", alignItems: "center" }, props.containerStyle]}>

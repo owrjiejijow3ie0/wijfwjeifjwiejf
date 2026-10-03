@@ -32,6 +32,14 @@ export default {
         const patchBeforeIfFound = (method, target, callback) => {
             if (target) unpatches.push(patcher.before(method, target, callback))
         }
+        const syncAvatarMobileStatus = (root, userId) => {
+            const statusElement = findInReactTree(root, (child) =>
+                child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
+            );
+            if (statusElement) {
+                statusElement.props.isMobileOnline = Boolean(getUserStatuses(userId)?.mobile) && !storage.hideMobileStatus;
+            }
+        };
         const insertStatusIconsAfterName = (root, userId, key) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
 
@@ -66,7 +74,7 @@ export default {
 
             insertionChildren.splice(insertionIndex + 1, 0,
                 <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center" }}>
-                    {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small mobileFirst />}
+                    {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small />}
                 </View>
             );
             return true;
@@ -366,6 +374,7 @@ export default {
             unpatches.push(patcher.after("type", Rows.GuildMemberRow, ([{ user }], res) => {
                 if(!storage.userList) return;
                 if(!user || user.bot) return;
+                syncAvatarMobileStatus(res, user.id);
                 if(storage.oldUserListIcons) return;
                 insertStatusIconsAfterName(res, user.id, "GuildMemberRowStatusIconsView");
             }))
@@ -378,6 +387,7 @@ export default {
         const rowPatch = ([{ user }], res) => {
             if(!storage.userList) return;
             if(!user || user.bot) return;
+            syncAvatarMobileStatus(res, user.id);
 
             const label = res?.props?.label;
             const modifiedStatusIcons = findInReactTree(label, (c) => c.key == "TabsV2MemberListStatusIconsView");
@@ -392,7 +402,7 @@ export default {
                         }} key="TabsV2MemberListStatusIconsView">
                             {label}
                             <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 2 }}>
-                                {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small mobileFirst />}
+                                {debugLabels ? <Text>TV2MLSIV</Text> : <StatusIcons userId={user.id} small />}
                             </View>
                         </View>
                     );
