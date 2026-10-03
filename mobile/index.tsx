@@ -33,15 +33,20 @@ export default {
             if (target) unpatches.push(patcher.before(method, target, callback))
         }
         const syncAvatarMobileStatus = (root, userId) => {
-            const isMobileOnline = Boolean(getUserStatuses(userId)?.mobile) && !storage.hideMobileStatus;
-            const statusElement = findInReactTree(root, (child) =>
+            const mobileStatus = getUserStatuses(userId)?.mobile;
+            const isMobileOnline = Boolean(mobileStatus) && !storage.hideMobileStatus;
+            const avatarElement = root?.props?.icon;
+            const statusElement = findInReactTree(avatarElement ?? root, (child) =>
                 child?.props && (
                     Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline") ||
                     child?.type?.name === "Status" ||
                     child?.type?.type?.name === "Status"
                 )
             );
-            if (statusElement?.props) statusElement.props.isMobileOnline = isMobileOnline;
+            const statusProps = statusElement?.props ?? avatarElement?.props;
+            if (!statusProps) return;
+            statusProps.isMobileOnline = isMobileOnline;
+            if (mobileStatus) statusProps.status = mobileStatus;
         };
         const insertStatusIconsAfterName = (root, userId, key) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
@@ -59,28 +64,36 @@ export default {
             if (nameIndex === -1) return false;
 
             const findGuildTagPosition = (node) => {
-                const children = Array.isArray(node) ? node : node?.props?.children;
-                if (!Array.isArray(children)) return null;
+                if (Array.isArray(node)) {
+                    for (let index = 0; index < node.length; index++) {
+                        const child = node[index];
+                        if (child?.type?.Types && child.props?.type === 0) return { children: node, index };
 
-                for (let index = 0; index < children.length; index++) {
-                    const child = children[index];
-                    if (child?.type?.Types && child.props?.type === 0) return { children, index };
-
-                    const nestedPosition = findGuildTagPosition(child);
-                    if (nestedPosition) return nestedPosition;
+                        const nestedPosition = findGuildTagPosition(child);
+                        if (nestedPosition) return nestedPosition;
+                    }
+                    return null;
                 }
 
-                return null;
+                const children = node?.props?.children;
+                if (!children) return null;
+                if (children?.type?.Types && children.props?.type === 0) return { parent: node, child: children };
+                return findGuildTagPosition(children);
             };
             const guildTagPosition = findGuildTagPosition(root);
-            const insertionChildren = guildTagPosition?.children ?? nameChildren;
-            const insertionIndex = guildTagPosition?.index ?? nameIndex;
-
-            insertionChildren.splice(insertionIndex + 1, 0,
+            const statusIcons = (
                 <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center" }}>
                     {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small />}
                 </View>
             );
+
+            if (guildTagPosition?.parent) {
+                guildTagPosition.parent.props.children = [guildTagPosition.child, statusIcons];
+            } else {
+                const insertionChildren = guildTagPosition?.children ?? nameChildren;
+                const insertionIndex = guildTagPosition?.index ?? nameIndex;
+                insertionChildren.splice(insertionIndex + 1, 0, statusIcons);
+            }
             return true;
         };
 
@@ -380,7 +393,14 @@ export default {
             const statusProps = args?.[0];
             if (!statusProps) return;
             if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
-            else if (statusProps.userId && getUserStatuses(statusProps.userId)?.mobile) statusProps.isMobileOnline = true;
+            else {
+                const userId = statusProps.userId ?? statusProps.user?.id;
+                const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
+                if (mobileStatus) {
+                    statusProps.isMobileOnline = true;
+                    statusProps.status = mobileStatus;
+                }
+            }
         })
 
         //might remove in the future, seems outdated
