@@ -45,8 +45,17 @@ export default {
             );
             const statusProps = statusElement?.props ?? avatarElement?.props;
             if (!statusProps) return;
+            if (storage.hideMobileStatus) {
+                statusProps.isMobileOnline = false;
+                return;
+            }
             statusProps.isMobileOnline = isMobileOnline;
-            if (mobileStatus) statusProps.status = mobileStatus;
+            if (mobileStatus) {
+                const statusColor = getStatusColor(mobileStatus, storage.fallbackColors);
+                statusProps.status = mobileStatus;
+                statusProps.color = statusColor;
+                statusProps.style = [statusProps.style, { backgroundColor: statusColor }];
+            }
         };
         const insertStatusIconsAfterName = (root, userId, key, nameRoot = root) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
@@ -63,13 +72,13 @@ export default {
             );
             if (nameIndex === -1) return false;
 
-            const findGuildTagPosition = (node, preferGuildTag = true) => {
+            const findGuildTagPosition = (node, startIndex = 0, preferGuildTag = true) => {
                 if (Array.isArray(node)) {
-                    for (let index = 0; index < node.length; index++) {
+                    for (let index = startIndex; index < node.length; index++) {
                         const child = node[index];
                         if (child?.type?.Types && (!preferGuildTag || child.props?.type === 0)) return { children: node, index };
 
-                        const nestedPosition = findGuildTagPosition(child, preferGuildTag);
+                        const nestedPosition = findGuildTagPosition(child, 0, preferGuildTag);
                         if (nestedPosition) return nestedPosition;
                     }
                     return null;
@@ -78,9 +87,9 @@ export default {
                 const children = node?.props?.children;
                 if (!children) return null;
                 if (children?.type?.Types && (!preferGuildTag || children.props?.type === 0)) return { parent: node, child: children };
-                return findGuildTagPosition(children, preferGuildTag);
+                return findGuildTagPosition(children, 0, preferGuildTag);
             };
-            const guildTagPosition = findGuildTagPosition(root) ?? findGuildTagPosition(root, false);
+            const guildTagPosition = findGuildTagPosition(nameChildren, nameIndex + 1) ?? findGuildTagPosition(nameChildren, nameIndex + 1, false);
             const statusIcons = (
                 <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center" }}>
                     {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small />}
@@ -322,20 +331,24 @@ export default {
 
 
         const profileBadgeProps = {};
+        const applyMobileBadgeLayoutProps = (badge, element) => {
+            if (badge?.platform !== "mobile" || !element?.props) return;
+            element.props.props = { ...element.props.props, ...badge.props };
+        };
         const applyProfileBadgeProps = (_, element) => {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) {
                 element.props.source = badge.source;
                 element.props.label = badge.label;
                 element.props.id = badge.id;
-                if (badge.props) Object.assign(element.props, badge.props);
+                applyMobileBadgeLayoutProps(badge, element);
             }
         };
         const applyRenderBadgeProps = (_, element) => {
             const badge = profileBadgeProps[element?.props?.id];
             if (badge && element?.props) {
                 Object.assign(element.props, badge);
-                if (badge.props) Object.assign(element.props, badge.props);
+                applyMobileBadgeLayoutProps(badge, element);
             }
         };
         const jsxApi = (globalThis as any).bunny?.api?.react?.jsx;
@@ -381,6 +394,7 @@ export default {
                     source: { uri: iconUri },
                     label,
                     platform,
+                    props: platform === "mobile" ? { style: { marginRight: -4 } } : undefined,
                     userId
                 };
                 badges.unshift({ id, description: label, icon: "platform-indicator" });
@@ -391,14 +405,20 @@ export default {
         patchBeforeIfFound("default", Status, (args) => {
             const statusProps = args?.[0];
             if (!statusProps) return;
-            if (storage.hideMobileStatus) statusProps.isMobileOnline = false;
-            else {
-                const userId = statusProps.userId ?? statusProps.user?.id;
-                const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
-                if (mobileStatus) {
-                    statusProps.isMobileOnline = true;
-                    statusProps.status = mobileStatus;
-                }
+            if (storage.hideMobileStatus) {
+                statusProps.isMobileOnline = false;
+                return;
+            }
+
+            const userId = statusProps.userId ?? statusProps.user?.id;
+            const mobileStatus = userId ? getUserStatuses(userId)?.mobile : null;
+            if (mobileStatus) statusProps.isMobileOnline = true;
+            if (statusProps.isMobileOnline) {
+                const status = mobileStatus ?? statusProps.status ?? "online";
+                const statusColor = getStatusColor(status, storage.fallbackColors);
+                statusProps.status = status;
+                statusProps.color = statusColor;
+                statusProps.style = [statusProps.style, { backgroundColor: statusColor }];
             }
         })
 
