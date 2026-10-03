@@ -37,7 +37,7 @@ function queryPresenceStoreWithCache(){
     return statusCache
 }
 
-function getUserStatuses(userId){
+export function getUserStatuses(userId){
     let statuses;
 
     if(!currentUserId){

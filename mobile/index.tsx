@@ -2,7 +2,7 @@ import { patcher } from "@vendetta";
 import { findByDisplayName, findByName, findByProps, findByPropsAll, findByStoreName, findByTypeNameAll, findByTypeName } from "@vendetta/metro";
 import {General} from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils";
-import StatusIcons from "./StatusIcons";
+import StatusIcons, { getUserStatuses } from "./StatusIcons";
 import { getAssetByName, getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
 import Settings from "./settings";
@@ -250,34 +250,65 @@ export default {
         //}));
 
 
-        const displayNameByProps = findByProps("DisplayName");
-        const displayNameByName = displayNameByProps ? null : findByName("DisplayName", false);
-        const displayNameTarget = displayNameByProps ?? displayNameByName;
-        const displayNameMethod = displayNameByProps ? "DisplayName" : "default";
-        patchAfterIfFound(displayNameMethod, displayNameTarget, (args, res) => {
-            if (!storage.profileUsername || !res?.props) return;
-
-            const profileNameRow = findInReactTree(res, child => child?.props?.style?.flexDirection === "row") ?? res;
-            if (!profileNameRow?.props) return;
-
-            if (!findInReactTree(profileNameRow, child => child?.key === "ProfileIndicatorDebug")) {
-                const debugMarker = <Text key="ProfileIndicatorDebug" style={{ color: "#ff4b4b", fontSize: 12 }}>PI hook</Text>;
-                const children = profileNameRow.props.children;
-                profileNameRow.props.children = Array.isArray(children) ? [...children, debugMarker] : [children, debugMarker];
+        const profileBadgeProps = {};
+        const profileBadgeSources = {
+            desktop: getAssetIDByName("ic_monitor_24px"),
+            web: getAssetIDByName("ic_globe_24px"),
+            mobile: getAssetIDByName("ic_mobile_device"),
+            embedded: getAssetIDByName("ic_monitor_24px"),
+            vr: getAssetIDByName("ic_vr_headset_24px")
+        };
+        const applyProfileBadgeProps = (_, element) => {
+            const badge = profileBadgeProps[element?.props?.id];
+            if (badge && element?.props) {
+                element.props.source = badge.source;
+                element.props.label = badge.label;
+                element.props.id = badge.id;
             }
+        };
+        const applyRenderBadgeProps = (_, element) => {
+            const badge = profileBadgeProps[element?.props?.id];
+            if (badge && element?.props) Object.assign(element.props, badge);
+        };
+        const jsxApi = (globalThis as any).bunny?.api?.react?.jsx;
 
-            const userId = args[0]?.user?.id ?? args[0]?.userId ?? findInReactTree(args[0], entry => entry?.user?.id)?.user?.id;
-            if (!userId || findInReactTree(profileNameRow, child => child?.key === "ProfilePlatformIndicators")) return;
+        if (jsxApi?.onJsxCreate) {
+            jsxApi.onJsxCreate("ProfileBadge", applyProfileBadgeProps);
+            jsxApi.onJsxCreate("RenderBadge", applyRenderBadgeProps);
+            unpatches.push(() => {
+                jsxApi.deleteJsxCreate?.("ProfileBadge", applyProfileBadgeProps);
+                jsxApi.deleteJsxCreate?.("RenderBadge", applyRenderBadgeProps);
+            });
+        } else {
+            const jsxRuntime = findByProps("jsx", "jsxs");
+            const applyBadgeJsx = ([component], element) => {
+                if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element);
+                if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element);
+            };
+            patchAfterIfFound("jsx", jsxRuntime, applyBadgeJsx);
+            patchAfterIfFound("jsxs", jsxRuntime, applyBadgeJsx);
+        }
 
-            const indicators = (
-                <PresenceUpdatedContainer key="ProfilePlatformIndicators">
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <StatusIcons userId={userId} />
-                    </View>
-                </PresenceUpdatedContainer>
-            );
-            const children = profileNameRow.props.children;
-            profileNameRow.props.children = Array.isArray(children) ? [indicators, ...children] : [indicators, children];
+        const useBadges = findByName("useBadges", false);
+        patchAfterIfFound("default", useBadges, (args, badges) => {
+            const userId = args[0]?.userId;
+            if (!storage.profileUsername || !userId || !Array.isArray(badges)) return;
+
+            const statuses = getUserStatuses(userId);
+            const platformStatuses = Object.entries(statuses ?? {})
+                .filter(([platform]) => profileBadgeSources[platform]);
+
+            for (const [platform, status] of platformStatuses.reverse()) {
+                const id = `platform-indicator-${platform}`;
+                const label = `${platform.charAt(0).toUpperCase()}${platform.slice(1)} (${status})`;
+                profileBadgeProps[id] = {
+                    id,
+                    source: profileBadgeSources[platform],
+                    label,
+                    userId
+                };
+                badges.unshift({ id, description: label, icon: "platform-indicator" });
+            }
         });
 
         const Status = findByName("Status", false);
