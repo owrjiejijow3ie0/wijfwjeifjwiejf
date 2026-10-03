@@ -47,7 +47,24 @@ export default {
             );
             if (nameIndex === -1) return false;
 
-            nameChildren.splice(nameIndex + 1, 0,
+            const findGuildTagPosition = (children, startIndex = 0) => {
+                if (!Array.isArray(children)) return null;
+
+                for (let index = startIndex; index < children.length; index++) {
+                    const child = children[index];
+                    if (child?.type?.Types && child.props?.type === 0) return { children, index };
+
+                    const nestedPosition = findGuildTagPosition(child?.props?.children);
+                    if (nestedPosition) return nestedPosition;
+                }
+
+                return null;
+            };
+            const guildTagPosition = findGuildTagPosition(nameChildren, nameIndex + 1);
+            const insertionChildren = guildTagPosition?.children ?? nameChildren;
+            const insertionIndex = guildTagPosition?.index ?? nameIndex;
+
+            insertionChildren.splice(insertionIndex + 1, 0,
                 <View key={key} style={{ flexDirection: "row", alignItems: "center", alignSelf: "center" }}>
                     {debugLabels ? <Text>{key}</Text> : <StatusIcons userId={userId} small mobileFirst />}
                 </View>
