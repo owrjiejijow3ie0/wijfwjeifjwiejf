@@ -47,24 +47,20 @@ export default {
             </View>
         );
         const addAvatarMobileIndicator = (root, userId) => {
-            const mobileStatus = getUserStatuses(userId)?.mobile;
-            const avatar = root?.props?.icon;
-            if (!mobileStatus || storage.hideMobileStatus || !avatar) return;
-            if (findInReactTree(avatar, (child) => child?.key === "MobilePlatformAvatarIndicator")) return;
 
             const nativeIndicator = findInReactTree(avatar, (child) =>
                 child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
             );
             if (nativeIndicator) nativeIndicator.props.isMobileOnline = false;
 
-            root.props.icon = (
+                    if (badge.props) Object.assign(element.props, badge.props);
                 <View key="MobilePlatformAvatarIndicator" style={{ position: "relative" }}>
                     {avatar}
                     <View pointerEvents="none" style={{ position: "absolute", right: -2, bottom: -2 }}>
                         {renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")}
                     </View>
                 </View>
-            );
+                    if (badge.props) Object.assign(element.props, badge.props);
         };
         const insertStatusIconsAfterName = (root, userId, key) => {
             if (findInReactTree(root, (child) => child?.key === key)) return true;
@@ -81,20 +77,21 @@ export default {
             );
             if (nameIndex === -1) return false;
 
-            const findGuildTagPosition = (children, startIndex = 0) => {
+            const findGuildTagPosition = (node) => {
+                const children = Array.isArray(node) ? node : node?.props?.children;
                 if (!Array.isArray(children)) return null;
 
-                for (let index = startIndex; index < children.length; index++) {
+                for (let index = 0; index < children.length; index++) {
                     const child = children[index];
-                    if (child?.type?.Types) return { children, index };
+                    if (child?.type?.Types && child.props?.type === 0) return { children, index };
 
-                    const nestedPosition = findGuildTagPosition(child?.props?.children);
+                    const nestedPosition = findGuildTagPosition(child);
                     if (nestedPosition) return nestedPosition;
                 }
 
                 return null;
             };
-            const guildTagPosition = findGuildTagPosition(nameChildren, nameIndex + 1);
+            const guildTagPosition = findGuildTagPosition(root);
             const insertionChildren = guildTagPosition?.children ?? nameChildren;
             const insertionIndex = guildTagPosition?.index ?? nameIndex;
 
@@ -388,6 +385,7 @@ export default {
                     source: { uri: iconUri },
                     label,
                     platform,
+                    props: platform === "mobile" ? { style: { marginRight: -3 } } : undefined,
                     userId
                 };
                 badges.unshift({ id, description: label, icon: "platform-indicator" });
@@ -473,31 +471,14 @@ export default {
         //Requires forcing a re-render of the whole list manually
         const MessagesItemChannelContent = findByTypeName("MessagesItemChannelContent")
         patchAfterIfFound("type", MessagesItemChannelContent, (args, res) => {
-            console.log("MessagesItemChannelContent-B", args, res)
-            //window.micc = res
             const channel = args[0]?.channel
             if(channel?.recipients?.length == 1){
                 const userId = channel.recipients[0]
-                
-                
-                //took some inspiration from here
-                //https://github.com/everestmcarthur/revenge-plugins/blob/main/plugins/staff-tags/src/patches/details.tsx
-                
-            
-                if(findInReactTree(res, m => m?.key == "TabsV2RedesignDMListIcons2")) return;
-
-                const nameContainer = findInReactTree(res, m => m?.props?.children?.some(h => h?.props?.ellipsizeMode))
-                window.nc = nameContainer
-                
-                if(nameContainer?.props?.children){
-                    const orig = nameContainer.props.children[0]
-                    nameContainer.props.children = <View key="TabsV2RedesignDMListIcons2" style={{
-                        flexDirection: 'row'
-                    }}>
-                        {orig}
-                        <StatusIcons userId={userId}/>
-                    </View>
-                }
+                const nameContainer = findInReactTree(res, (node) =>
+                    Array.isArray(node?.props?.children) &&
+                    node.props.children.some((child) => child?.props?.ellipsizeMode)
+                );
+                if (nameContainer) insertStatusIconsAfterName(nameContainer, userId, "TabsV2RedesignDMListIcons2");
             }
             //nameContainer.props.children = <Text>hhh</Text>
             //const userId = messageContainer?.props?.message?.author?.id

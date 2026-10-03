@@ -298,16 +298,14 @@ var __pluginBundle = (() => {
         justifyContent: "center"
       } }, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcon, { platform: "mobile", color: "#000", iconSize: 8 }));
       const addAvatarMobileIndicator = (root, userId) => {
-        const mobileStatus = getUserStatuses(userId)?.mobile;
-        const avatar = root?.props?.icon;
-        if (!mobileStatus || storage.hideMobileStatus || !avatar) return;
-        if (findInReactTree(avatar, (child) => child?.key === "MobilePlatformAvatarIndicator")) return;
         const nativeIndicator = findInReactTree(
           avatar,
           (child) => child?.props && Object.prototype.hasOwnProperty.call(child.props, "isMobileOnline")
         );
         if (nativeIndicator) nativeIndicator.props.isMobileOnline = false;
-        root.props.icon = /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "MobilePlatformAvatarIndicator", style: { position: "relative" } }, avatar, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { pointerEvents: "none", style: { position: "absolute", right: -2, bottom: -2 } }, renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")));
+        if (badge.props) Object.assign(element.props, badge.props);
+        /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "MobilePlatformAvatarIndicator", style: { position: "relative" } }, avatar, /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { pointerEvents: "none", style: { position: "absolute", right: -2, bottom: -2 } }, renderMobileStatusGlyph(mobileStatus, "MobilePlatformAvatarGlyph")));
+        if (badge.props) Object.assign(element.props, badge.props);
       };
       const insertStatusIconsAfterName = (root, userId, key) => {
         if (findInReactTree(root, (child) => child?.key === key)) return true;
@@ -321,17 +319,18 @@ var __pluginBundle = (() => {
           (item) => typeof item === "string" || typeof item?.props?.children === "string"
         );
         if (nameIndex === -1) return false;
-        const findGuildTagPosition = (children, startIndex = 0) => {
+        const findGuildTagPosition = (node) => {
+          const children = Array.isArray(node) ? node : node?.props?.children;
           if (!Array.isArray(children)) return null;
-          for (let index = startIndex; index < children.length; index++) {
+          for (let index = 0; index < children.length; index++) {
             const child = children[index];
-            if (child?.type?.Types) return { children, index };
-            const nestedPosition = findGuildTagPosition(child?.props?.children);
+            if (child?.type?.Types && child.props?.type === 0) return { children, index };
+            const nestedPosition = findGuildTagPosition(child);
             if (nestedPosition) return nestedPosition;
           }
           return null;
         };
-        const guildTagPosition = findGuildTagPosition(nameChildren, nameIndex + 1);
+        const guildTagPosition = findGuildTagPosition(root);
         const insertionChildren = guildTagPosition?.children ?? nameChildren;
         const insertionIndex = guildTagPosition?.index ?? nameIndex;
         insertionChildren.splice(
@@ -395,24 +394,24 @@ var __pluginBundle = (() => {
         });
       });
       const profileBadgeProps = {};
-      const tightenMobileBadgeSpacing = (badge, element) => {
-        if (badge?.platform !== "mobile" || !element?.props) return;
-        element.props.style = [element.props.style, { marginRight: -3 }];
+      const tightenMobileBadgeSpacing = (badge2, element2) => {
+        if (badge2?.platform !== "mobile" || !element2?.props) return;
+        element2.props.style = [element2.props.style, { marginRight: -3 }];
       };
-      const applyProfileBadgeProps = (_, element) => {
-        const badge = profileBadgeProps[element?.props?.id];
-        if (badge && element?.props) {
-          element.props.source = badge.source;
-          element.props.label = badge.label;
-          element.props.id = badge.id;
-          tightenMobileBadgeSpacing(badge, element);
+      const applyProfileBadgeProps = (_, element2) => {
+        const badge2 = profileBadgeProps[element2?.props?.id];
+        if (badge2 && element2?.props) {
+          element2.props.source = badge2.source;
+          element2.props.label = badge2.label;
+          element2.props.id = badge2.id;
+          tightenMobileBadgeSpacing(badge2, element2);
         }
       };
-      const applyRenderBadgeProps = (_, element) => {
-        const badge = profileBadgeProps[element?.props?.id];
-        if (badge && element?.props) {
-          Object.assign(element.props, badge);
-          tightenMobileBadgeSpacing(badge, element);
+      const applyRenderBadgeProps = (_, element2) => {
+        const badge2 = profileBadgeProps[element2?.props?.id];
+        if (badge2 && element2?.props) {
+          Object.assign(element2.props, badge2);
+          tightenMobileBadgeSpacing(badge2, element2);
         }
       };
       const jsxApi = globalThis.bunny?.api?.react?.jsx;
@@ -425,9 +424,9 @@ var __pluginBundle = (() => {
         });
       } else {
         const jsxRuntime = findByProps("jsx", "jsxs");
-        const applyBadgeJsx = ([component], element) => {
-          if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element);
-          if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element);
+        const applyBadgeJsx = ([component], element2) => {
+          if (component?.name === "ProfileBadge") applyProfileBadgeProps(component, element2);
+          if (component?.name === "RenderBadge") applyRenderBadgeProps(component, element2);
         };
         patchAfterIfFound("jsx", jsxRuntime, applyBadgeJsx);
         patchAfterIfFound("jsxs", jsxRuntime, applyBadgeJsx);
@@ -449,6 +448,7 @@ var __pluginBundle = (() => {
             source: { uri: iconUri },
             label,
             platform,
+            props: platform === "mobile" ? { style: { marginRight: -3 } } : void 0,
             userId
           };
           badges.unshift({ id, description: label, icon: "platform-indicator" });
@@ -501,19 +501,14 @@ var __pluginBundle = (() => {
       findByTypeNameAll("UserRow").forEach((UserRow) => unpatches.push(patcher.after("type", UserRow, rowPatch)));
       const MessagesItemChannelContent = findByTypeName("MessagesItemChannelContent");
       patchAfterIfFound("type", MessagesItemChannelContent, (args, res) => {
-        console.log("MessagesItemChannelContent-B", args, res);
         const channel = args[0]?.channel;
         if (channel?.recipients?.length == 1) {
           const userId = channel.recipients[0];
-          if (findInReactTree(res, (m) => m?.key == "TabsV2RedesignDMListIcons2")) return;
-          const nameContainer = findInReactTree(res, (m) => m?.props?.children?.some((h) => h?.props?.ellipsizeMode));
-          window.nc = nameContainer;
-          if (nameContainer?.props?.children) {
-            const orig = nameContainer.props.children[0];
-            nameContainer.props.children = /* @__PURE__ */ vendetta.metro.common.React.createElement(View4, { key: "TabsV2RedesignDMListIcons2", style: {
-              flexDirection: "row"
-            } }, orig, /* @__PURE__ */ vendetta.metro.common.React.createElement(StatusIcons, { userId }));
-          }
+          const nameContainer = findInReactTree(
+            res,
+            (node) => Array.isArray(node?.props?.children) && node.props.children.some((child) => child?.props?.ellipsizeMode)
+          );
+          if (nameContainer) insertStatusIconsAfterName(nameContainer, userId, "TabsV2RedesignDMListIcons2");
         }
       });
     },
